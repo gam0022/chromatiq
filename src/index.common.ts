@@ -11,7 +11,7 @@ export const chromatiq = new Chromatiq(
   // Image Shaders
   require("./shaders/common-header.glsl").default,
   [
-    require("./shaders/raymarching-mandel.glsl").default,
+    require("./shaders/raymarching-beach.glsl").default,
     require("./shaders/post-effect.glsl").default,
     // require("./shaders/effects/debug-circle.glsl").default,
   ],
