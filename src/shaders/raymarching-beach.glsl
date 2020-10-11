@@ -3,9 +3,6 @@ const float OFFSET = 0.001;
 
 vec3 directionalLight;
 
-#define SCENE_MANDEL 0.0
-#define SCENE_UNIVERSE 1.0
-
 uniform float gCameraEyeX;     // -0.08828528243935951 -100 100 camera
 uniform float gCameraEyeY;     // 3.5309297601209235 -100 100
 uniform float gCameraEyeZ;     // -2.705631420983895 -100 100
@@ -14,14 +11,10 @@ uniform float gCameraTargetY;  // 3.4515422110479044 -100 100
 uniform float gCameraTargetZ;  // -0.21633410393024527 -100 100
 uniform float gCameraFov;      // 37.88049605411499 0 180
 
-uniform float gSceneEps;         // 0.002 0.00001 0.01 scene
-uniform float gMandelboxScale;   // 2.7 1 5
-uniform float gMandelboxRepeat;  // 10 1 100
-uniform float gEdgeEps;          // 0.0005 0.0001 0.01
-uniform float gEdgePower;        // 1 0.1 10
-uniform float gBaseColor;        // 0.5
-uniform float gRoughness;        // 0.14
-uniform float gMetallic;         // 0.49
+uniform float gSceneEps;   // 0.002 0.00001 0.01 scene
+uniform float gBaseColor;  // 0.5
+uniform float gRoughness;  // 0.14
+uniform float gMetallic;   // 0.49
 
 struct Ray {
     vec3 origin;
@@ -80,25 +73,18 @@ mat2 rotate(float a) {
     return mat2(c, s, -s, c);
 }
 
-float dMandelFast(vec3 p, float scale, int n) {
-    vec4 q0 = vec4(p, 1.0);
-    vec4 q = q0;
-
-    for (int i = 0; i < n; i++) {
-        q.xyz = clamp(q.xyz, -1.0, 1.0) * 2.0 - q.xyz;
-        q = q * scale / clamp(dot(q.xyz, q.xyz), 0.3, 1.0) + q0;
-    }
-
-    return length(q.xyz) / abs(q.w);
-}
+uniform float gTerrainPow;  // 3.7 0 10
 
 float map(vec3 p) {
-    float d = dMandelFast(p, gMandelboxScale, int(gMandelboxRepeat));
+    float d = p.y;
+    if (d < 1.0) {
+        d -= pow(fbm(p.xz), gTerrainPow);
+    }
     return d;
 }
 
 float mapLod(vec3 p) {
-    float d = dMandelFast(p, gMandelboxScale, 5);
+    float d = p.y;
     return d;
 }
 
@@ -140,26 +126,7 @@ void intersectObjects(inout Intersection intersection, inout Ray ray) {
 }
 
 uniform float gLodEps;    // 0.00001 0 0.01
-uniform float gLodLoop;   // 45 0 100
 uniform float gLodScale;  // 3.1 1 10
-
-void intersectObjectsLod(inout Intersection intersection, inout Ray ray) {
-    float d;
-    float distance = 0.0;
-    vec3 p = ray.origin;
-    float eps = gLodEps;
-
-    for (int i = 0; i < int(gLodLoop); i++) {
-        d = mapLod(p);
-        distance += d * gLodScale;
-        p = ray.origin + distance * ray.direction;
-        if (d < eps) break;
-    }
-
-    if (distance < intersection.distance) {
-        intersection.hit = true;
-    }
-}
 
 #define FLT_EPS 5.960464478e-8
 
@@ -227,51 +194,6 @@ float calcShadow(in vec3 p, in vec3 rd) {
     return gShadowIntensity + (1.0 - gShadowIntensity) * bright;
 }
 
-// https://www.shadertoy.com/view/WsfBDf
-
-const int c_numRayMarchSteps = 16;
-const vec3 c_fogColorLit = vec3(1.0f, 1.0f, 1.0f);
-const vec3 c_fogColorUnlit = vec3(0.0f, 0.0f, 0.0f);
-
-uniform float gFogDensity;  // 0.13 0 0.5
-
-// this noise, including the 5.58... scrolling constant are from Jorge Jimenez
-float InterleavedGradientNoise(vec2 pixel, int frame) {
-    pixel += (float(frame) * 5.588238f);
-    return fract(52.9829189f * fract(0.06711056f * float(pixel.x) + 0.00583715f * float(pixel.y)));
-}
-
-// ray march from the camera to the depth of what the ray hit to do some simple scattering
-vec3 applyFog(in vec3 rayPos, in vec3 rayDir, in vec3 pixelColor, in float rayHitTime, in vec2 pixelPos) {
-    // Offset the start of the ray between 0 and 1 ray marching steps.
-    // This turns banding into noise.
-    int frame = 0;
-    float startRayOffset = InterleavedGradientNoise(pixelPos, frame);
-
-    // calculate how much of the ray is in direct light by taking a fixed number of steps down the ray
-    // and calculating the percent.
-    // Note: in a rasterizer, you'd replace the RayVsScene raytracing with a shadow map lookup!
-    float fogLitPercent = 0.0f;
-    for (int i = 0; i < c_numRayMarchSteps; ++i) {
-        vec3 testPos = rayPos + rayDir * rayHitTime * ((float(i) + startRayOffset) / float(c_numRayMarchSteps));
-
-        Intersection intersection;
-        intersection.distance = INF;
-        intersection.hit = false;
-
-        Ray ray;
-        ray.origin = testPos;
-        ray.direction = directionalLight;
-
-        intersectObjectsLod(intersection, ray);
-        fogLitPercent = mix(fogLitPercent, intersection.hit ? 0.0 : 1.0, 1.0 / float(i + 1));
-    }
-
-    vec3 fogColor = mix(c_fogColorUnlit, c_fogColorLit, fogLitPercent);
-    float absorb = exp(-rayHitTime * gFogDensity);
-    return mix(fogColor, pixelColor, absorb);
-}
-
 void calcRadiance(inout Intersection intersection, inout Ray ray, vec2 fragCoord) {
     intersection.hit = false;
     intersection.distance = INF;
@@ -279,32 +201,16 @@ void calcRadiance(inout Intersection intersection, inout Ray ray, vec2 fragCoord
 
     if (intersection.hit) {
         intersection.color = intersection.emission;
-        intersection.color += gAmbientIntensity * gSunColor * calcAo(intersection.position, intersection.normal);
+        intersection.color += gAmbientIntensity * gSunColor;
         intersection.color += evalDirectionalLight(intersection, -ray.direction, directionalLight, gSunColor) * calcShadow(intersection.position, directionalLight);
-        intersection.color = applyFog(ray.origin, ray.direction, intersection.color, intersection.distance, fragCoord);
+        // intersection.color = applyFog(ray.origin, ray.direction, intersection.color, intersection.distance, fragCoord);
     } else {
-        intersection.color = c_fogColorLit;
+        intersection.color = vec3(1, 1, 1);
     }
-}
-
-uniform float gShockDistortion;    // 0 0 1 distortion
-uniform float gExplodeDistortion;  // 0 0 1
-
-vec2 distortion(vec2 uv) {
-    float l = length(uv);
-    // uv += 1.5 * uv * sin(l + beat * PIH);
-
-    uv += -gShockDistortion * uv * cos(l);
-
-    float explode = 30.0 * gExplodeDistortion * exp(-2.0 * l);
-    explode = mix(explode, 2.0 * sin(l + 10.0 * gExplodeDistortion), 10.0 * gExplodeDistortion);
-    uv += explode * uv;
-    return uv;
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 uv = (fragCoord * 2.0 - iResolution.xy) / min(iResolution.x, iResolution.y);
-    uv = distortion(uv);
 
     directionalLight = normalize(vec3(gDirectionalLightX, gDirectionalLightY, gDirectionalLightZ));
 
