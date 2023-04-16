@@ -6,16 +6,13 @@ uniform float gCameraTargetY;  // 3.4515422110479044 -100 100
 uniform float gCameraTargetZ;  // -0.21633410393024527 -100 100
 uniform float gCameraFov;      // 37.88049605411499 0 180
 
-#define BPM 114.0
-#define TAU 6.28318530718
-#define saturate(x) clamp(x, 0., 1.)
 #define opRep(p, a) p = mod(p, a) - a * 0.5
 #define opRepLim(p, c, l) p = p - c * clamp(floor(p / c + 0.5), -l, l);
 
 vec3 ro, target;
 float fov;
 vec3 scol;
-float beat;
+// float beat;
 float beatTau;
 float beatPhase;
 
@@ -48,30 +45,6 @@ float smoothPulse(float start, float end, float period, float smoothness, float 
     float h = abs(end - start) * 0.5;
     t = mod(t, period);
     return smoothstep(start, start + h * smoothness, t) - smoothstep(end - h * smoothness, end, t);
-}
-
-// Hash without Sine by David Hoskins.
-// https://www.shadertoy.com/view/4djSRW
-float hash12(vec2 p) {
-    vec3 p3 = fract(vec3(p.xyx) * .1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
-}
-
-vec2 hash23(vec3 p3) {
-    p3 = fract(p3 * vec3(.1031, .1030, .0973));
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.xx + p3.yz) * p3.zy);
-}
-
-// hemisphere hash function based on a hash by Slerpy
-vec3 hashHs(vec3 n, vec3 seed) {
-    vec2 h = hash23(seed);
-    float a = h.x * 2. - 1.;
-    float b = TAU * h.y * 2. - 1.;
-    float c = sqrt(1. - a * a);
-    vec3 r = vec3(c * cos(b), a, c * sin(b));
-    return r;
 }
 
 // https://www.shadertoy.com/view/lssGWn
@@ -203,7 +176,7 @@ void setCameraRot(vec4 v, float roY) {
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    beat = iTime * BPM / 60.0;
+    // beat = iTime * BPM / 60.0;
     beatTau = beat * TAU;
     beatPhase = floor(beat)+(.5+.5*cos(TAU * .5 * exp(-5.0*fract(beat))));
 
@@ -256,6 +229,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // fade out
     // scol = mix(scol, vec3(0), remap01(beat, 4. * 70., 4. * 72.));
     
-    fragColor = saturate(vec4(0.7 * scol + 0.7 * bufa, 0.));
+    fragColor = saturate(vec4(1.4 * scol + 0.7 * bufa, 0.));
 #endif
 }
