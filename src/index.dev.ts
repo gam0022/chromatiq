@@ -289,7 +289,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
 
     // SessionStorage
     const saveToSessionStorage = (): void => {
-      // sessionStorage.setItem("guiWidth", gui.width.toString());
+      sessionStorage.setItem("gui", JSON.stringify(gui.save()));
       sessionStorage.setItem("debugCamera", config.debugCamera.toString());
       sessionStorage.setItem("debugParams", config.debugParams.toString());
       sessionStorage.setItem("debugDisableReset", config.debugDisableReset.toString());
@@ -314,9 +314,9 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
         return value === "true";
       };
 
-      const guiWidthStr = sessionStorage.getItem("guiWidth");
-      if (guiWidthStr) {
-        // gui.width = parseFloat(guiWidthStr);
+      const guiStr = sessionStorage.getItem("gui");
+      if (guiStr) {
+        gui.load(JSON.parse(guiStr));
       }
 
       const resolutionStr = sessionStorage.getItem("resolution");
