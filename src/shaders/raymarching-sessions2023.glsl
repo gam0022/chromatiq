@@ -78,24 +78,36 @@ vec4 map(vec3 pos) {
     vec3 p1 = pos;
     // p1.y += H;
     // opRep(p1.z, 2. * D);
-    p1 -= vec3(8.5, 0.0, 4.5) * 0.2;
-    
-    vec4 ifs_p1 = vec4(1.57 / 4. + sin(beatPhase / 4.), 3.59 / 4., 0, 0);
-    
-    for(int i = 0; i < 4; i++){
-        p1 = abs(p1 + vec3(8.5, 0.0, 4.5) * 0.2) - vec3(8.5, 0.0, 4.5) * 0.2;
-        rot(p1.xz, TAU * ifs_p1.x);
-        rot(p1.zy, TAU * ifs_p1.y);
+
+    vec4 _IFS_Rot = vec4(0.34, -0.28 + 0. * sin(beatPhase / 4.), 1.03, 0.);
+    vec4 _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.);
+    float _IFS_Blend = 1.;
+    float _IFS_Iteration = 0. * mod(beatPhase, 4.) + 2.;
+    vec4 _IFS_BoxBase = vec4(1, 1, 1, 0);
+    vec4 _IFS_BoxEmissive = vec4(0.05, 1.05, 1.05, 0);
+
+    p1 -= _IFS_Offset.xyz;
+
+    vec3 pp1 = p1;
+
+    for(int i = 0; i < int(_IFS_Iteration); i++){
+        pp1 = p1;
+        p1 = abs(p1 + _IFS_Offset.xyz) - _IFS_Offset.xyz;
+        rot(p1.xz, TAU * _IFS_Rot.x);
+        rot(p1.zy, TAU * _IFS_Rot.y);
+        rot(p1.xy, TAU * _IFS_Rot.z);
     }
 
-    //p1 *= 1.5;
-    //p1.y -= 2.;
+    opUnion(m, sdBox(p1, _IFS_BoxBase.xyz), SOL, 0.1, 0.5);
+    opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, 1.1, 0.5 + 0. * fract(beat + length(p1)));
+    opUnion(m, sdBox(p1, _IFS_BoxEmissive.yxz * _IFS_BoxEmissive.w), SOL, 1.1, 0.5);
 
-    
-    opUnion(m, sdBox(p1, vec3(2, 5, 2)), SOL, roughness, 0.5);
-    opUnion(m, sdBox(p1, vec3(0.1, 5, 2.1)), SOL, roughness + 1., 0.5 + step(16., beat) * fract(beat+length(p1)));
-    //opUnion(m, sdBox(p1, vec3(2.0, 0.3, 2.01)), SOL, 1.1, 0.5);
+    vec4 mp = vec4(1, VOL, 0, 0);
+    opUnion(mp, sdBox(pp1, _IFS_BoxBase.xyz), SOL, 0.1, 0.5);
+    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, 1.1, 0.5);
+    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yxz * _IFS_BoxEmissive.w), SOL, 1.1, 0.5);
 
+    m = mix(mp, m, fract(_IFS_Iteration));
 
     // background
     vec3 p2 = pos;
@@ -178,7 +190,7 @@ void setCameraRot(vec4 v, float roY) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // beat = iTime * BPM / 60.0;
     beatTau = beat * TAU;
-    beatPhase = floor(beat)+(.5+.5*cos(TAU * .5 * exp(-5.0*fract(beat))));
+    beatPhase = floor(beat / 2.)+(.5+.5*cos(TAU * .5 * exp(-5.0*fract(beat / 2.))));
 
     vec2 uv = fragCoord.xy / iResolution.xy;
 
