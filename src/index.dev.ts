@@ -1,6 +1,6 @@
 import { chromatiq, animateUniforms } from "./index.common";
 
-import * as dat from "dat.gui";
+import GUI from 'lil-gui';
 import { saveAs } from "file-saver";
 import { bufferToWave } from "./buffer-to-wave";
 
@@ -127,11 +127,11 @@ window.addEventListener(
     document.body.appendChild(stats.dom);
 
     // dat.GUI
-    const gui = new dat.GUI();
-    gui.useLocalStorage = true;
+    const gui = new GUI( { width: 400 } );
+    //gui.useLocalStorage = true;
 
     const debugFolder = gui.addFolder("debug");
-    debugFolder.add(config, "debugCamera").onChange((value) => {
+    debugFolder.add(config, "debugCamera").listen().onChange((value: boolean) => {
       if (value) {
         camera.position.x = chromatiq.uniforms.gCameraEyeX;
         camera.position.y = chromatiq.uniforms.gCameraEyeY;
@@ -157,7 +157,7 @@ window.addEventListener(
     miscFolder.add(config, "timeMode", ["time", "beat"]).onChange(() => {
       onTimeModeChange();
     });
-    miscFolder.add(config, "bpm", 50, 300).onChange(() => {
+    miscFolder.add(config, "bpm", 50, 300).listen().onChange(() => {
       beatLengthInput.valueAsNumber = timeToBeat(timeLengthInput.valueAsNumber);
       onBeatLengthUpdate();
     });
@@ -244,7 +244,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
     miscFolder.add(saevFunctions, "saveImageSequence");
     miscFolder.add(saevFunctions, "saveSound");
 
-    const groupFolders: { [index: string]: dat.GUI } = {};
+    const groupFolders: { [index: string]: GUI } = {};
 
     chromatiq.uniformArray.forEach((unifrom) => {
       let groupFolder = groupFolders[unifrom.group];
@@ -254,7 +254,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
       }
 
       if (typeof unifrom.initValue === "number") {
-        groupFolder.add(chromatiq.uniforms, unifrom.key, unifrom.min, unifrom.max).onChange((value) => {
+        groupFolder.add(chromatiq.uniforms, unifrom.key, unifrom.min, unifrom.max).listen().onChange((value: number) => {
           if (config.debugCamera) {
             switch (unifrom.key) {
               case "gCameraEyeX":
@@ -281,7 +281,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
           chromatiq.needsUpdate = true;
         });
       } else {
-        groupFolder.addColor(chromatiq.uniforms, unifrom.key).onChange(() => {
+        groupFolder.addColor(chromatiq.uniforms, unifrom.key).listen().onChange(() => {
           chromatiq.needsUpdate = true;
         });
       }
@@ -289,7 +289,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
 
     // SessionStorage
     const saveToSessionStorage = (): void => {
-      sessionStorage.setItem("guiWidth", gui.width.toString());
+      // sessionStorage.setItem("guiWidth", gui.width.toString());
       sessionStorage.setItem("debugCamera", config.debugCamera.toString());
       sessionStorage.setItem("debugParams", config.debugParams.toString());
       sessionStorage.setItem("debugDisableReset", config.debugDisableReset.toString());
@@ -302,7 +302,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
       sessionStorage.setItem("isPlaying", chromatiq.isPlaying.toString());
       sessionStorage.setItem("timeLength", timeLengthInput.value);
 
-      sessionStorage.setItem("guiClosed", gui.closed.toString());
+      sessionStorage.setItem("guiClosed", gui._closed.toString());
 
       for (const [key, uniform] of Object.entries(chromatiq.uniforms)) {
         sessionStorage.setItem(key, uniform.toString());
@@ -316,7 +316,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
 
       const guiWidthStr = sessionStorage.getItem("guiWidth");
       if (guiWidthStr) {
-        gui.width = parseFloat(guiWidthStr);
+        // gui.width = parseFloat(guiWidthStr);
       }
 
       const resolutionStr = sessionStorage.getItem("resolution");
@@ -380,7 +380,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
 
       const guiClosedStr = sessionStorage.getItem("guiClosed");
       if (guiClosedStr) {
-        gui.closed = parseBool(guiClosedStr);
+        gui._closed = parseBool(guiClosedStr);
       }
 
       for (const [key] of Object.entries(chromatiq.uniforms)) {
@@ -439,7 +439,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
     chromatiq.onPostRender = (): void => {
       stats.end();
       stats.update();
-      gui.updateDisplay();
+      // gui.updateDisplay();
     };
 
     chromatiq.onUpdate = (): void => {
@@ -454,7 +454,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
           chromatiq.uniforms.gCameraTargetY = controls.target.y;
           chromatiq.uniforms.gCameraTargetZ = controls.target.z;
 
-          gui.updateDisplay();
+          // gui.updateDisplay();
           chromatiq.needsUpdate = true;
         }
 

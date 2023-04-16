@@ -151,7 +151,7 @@ export const animateUniforms = (time: number, debugCamera: boolean, debugDisable
     .then(16 * 10000 , (t) => {
       camera = new Vector3(-6.21139322717302, 6.010495939159999, 22.503220238985616).add(Vector3.fbm(t).scale(0.01));
       target = new Vector3(5.343769275887814, -3.8719316266245003, -21.2988108700382).add(camera);
-      chromatiq.uniforms.gCameraFov = 90;
+      chromatiq.uniforms.gCameraFov = 90 + 10 * Math.sin(t);
 
       // chromatiq.uniforms.gMandelboxScale = 2.88621239103946;
     })
