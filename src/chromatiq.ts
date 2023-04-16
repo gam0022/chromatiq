@@ -21,8 +21,10 @@ class Pass {
   program: WebGLProgram;
   uniforms: { [index: string]: { type: string; value: any } };
   locations: { [index: string]: WebGLUniformLocation };
-  frameBuffer: WebGLFramebuffer;
-  texture: WebGLTexture;
+  frameBufferFront: WebGLFramebuffer;
+  frameBufferBack: WebGLFramebuffer;
+  textureFront: WebGLTexture;
+  textureBack: WebGLTexture;
   scale: number;
 }
 
@@ -238,12 +240,7 @@ export class Chromatiq {
         return locations;
       };
 
-      const setupFrameBuffer = (pass: Pass): void => {
-        // NOTE: 最終パスならフレームバッファは不要なので生成しません
-        if (pass.type === PassType.FinalImage) {
-          return;
-        }
-
+      const setupFrameBuffer = (pass: Pass): [WebGLFramebuffer, WebGLTexture] => {
         let width = pass.uniforms.iResolution.value[0];
         let height = pass.uniforms.iResolution.value[1];
         let type = gl.FLOAT;
@@ -259,12 +256,12 @@ export class Chromatiq {
         }
 
         // フレームバッファを生成します
-        pass.frameBuffer = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, pass.frameBuffer);
+        const frameBuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
 
         // フレームバッファ用テクスチャを生成します
-        pass.texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, pass.texture);
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, gl.RGBA, type, null);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
@@ -272,12 +269,14 @@ export class Chromatiq {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
         // フレームバッファにテクスチャを関連付けます
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pass.texture, 0);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 
         // 各種オブジェクトのバインドを解除します
         gl.bindTexture(gl.TEXTURE_2D, null);
         gl.bindRenderbuffer(gl.RENDERBUFFER, null);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        return [frameBuffer, texture];
       };
 
       const initPass = (program: WebGLProgram, index: number, type: PassType, scale: number): Pass => {
@@ -295,7 +294,7 @@ export class Chromatiq {
           },
           iTime: { type: "f", value: 0.0 },
           iPrevPass: { type: "t", value: Math.max(pass.index - 1, 0) },
-          iChannel0: { type: "t", value: 1 },
+          iChannel0: { type: "t", value: 0 },
           iBeforeBloom: {
             type: "t",
             value: Math.max(bloomPassBeginIndex - 1, 0),
@@ -325,14 +324,24 @@ export class Chromatiq {
 
         pass.locations = createLocations(pass);
 
-        setupFrameBuffer(pass);
+        // NOTE: 最終パスならフレームバッファは不要なので生成しません
+        if (pass.type !== PassType.FinalImage) {
+          let front = setupFrameBuffer(pass);
+          let back = setupFrameBuffer(pass);
+          pass.frameBufferFront = front[0];
+          pass.textureFront = front[1];
+          pass.frameBufferBack = back[0];
+          pass.textureBack = back[1];
+        }
+
         return pass;
       };
 
       const renderPass = (pass: Pass): void => {
         gl.useProgram(pass.program);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, pass.frameBuffer);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, pass.frameBufferFront);
+
+        // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         for (const [key, uniform] of Object.entries(pass.uniforms)) {
           const methods: { [index: string]: any } = {
@@ -362,10 +371,10 @@ export class Chromatiq {
                 gl.bindTexture(gl.TEXTURE_2D, textTexture);
               } else {
                 const i = Math.min(Math.floor(this.debugFrameNumber), imagePasses.length - 1);
-                gl.bindTexture(gl.TEXTURE_2D, imagePasses[i].texture);
+                gl.bindTexture(gl.TEXTURE_2D, imagePasses[i].textureBack);
               }
             } else {
-              gl.bindTexture(gl.TEXTURE_2D, imagePasses[uniform.value].texture);
+              gl.bindTexture(gl.TEXTURE_2D, imagePasses[uniform.value].textureBack);
             }
 
             // methods[uniform.type].call(gl, pass.locations[key], textureUnitIds[key]);
@@ -384,6 +393,15 @@ export class Chromatiq {
         if (error !== gl.NO_ERROR) console.log(error);
         gl.bindVertexArray(null);
         gl.useProgram(null);
+
+        // swap
+        let tmpFrameBuffer = pass.frameBufferFront;
+        pass.frameBufferFront = pass.frameBufferBack;
+        pass.frameBufferBack = tmpFrameBuffer;
+
+        let tmpTexture = pass.textureFront;
+        pass.textureFront = pass.textureBack;
+        pass.textureBack = tmpTexture;
       };
 
       this.setSize = (width: number, height: number): void => {
@@ -394,10 +412,20 @@ export class Chromatiq {
         gl.viewport(0, 0, width, height);
 
         imagePasses.forEach((pass) => {
-          gl.deleteFramebuffer(pass.frameBuffer);
-          gl.deleteTexture(pass.texture);
+          gl.deleteFramebuffer(pass.frameBufferFront);
+          gl.deleteFramebuffer(pass.frameBufferBack);
+          gl.deleteTexture(pass.textureFront);
+          gl.deleteTexture(pass.textureBack);
           pass.uniforms.iResolution.value = [width * pass.scale, height * pass.scale, 0];
-          setupFrameBuffer(pass);
+
+          if (pass.type !== PassType.FinalImage) {
+            let front = setupFrameBuffer(pass);
+            let back = setupFrameBuffer(pass);
+            pass.frameBufferFront = front[0];
+            pass.textureFront = front[1];
+            pass.frameBufferBack = back[0];
+            pass.textureBack = back[1];
+          }
         });
       };
 

@@ -7,7 +7,7 @@ precision mediump sampler3D;
 
 uniform vec3 iResolution;
 uniform float iTime;
-uniform sampler2D iChannel0; // current pass
+uniform sampler2D iChannel0; // first pass
 uniform sampler2D iPrevPass;
 uniform sampler2D iTextTexture;
 
