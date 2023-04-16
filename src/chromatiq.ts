@@ -21,10 +21,8 @@ class Pass {
   program: WebGLProgram;
   uniforms: { [index: string]: { type: string; value: any } };
   locations: { [index: string]: WebGLUniformLocation };
-  frameBufferFront: WebGLFramebuffer;
-  frameBufferBack: WebGLFramebuffer;
-  textureFront: WebGLTexture;
-  textureBack: WebGLTexture;
+  front: {frameBuffer: WebGLFramebuffer, texture: WebGLTexture};
+  back: {frameBuffer: WebGLFramebuffer, texture: WebGLTexture};
   scale: number;
 }
 
@@ -240,12 +238,17 @@ export class Chromatiq {
         return locations;
       };
 
-      const setupFrameBuffer = (pass: Pass): [WebGLFramebuffer, WebGLTexture] => {
+      const setupFrameBuffer = (pass: Pass): {frameBuffer: WebGLFramebuffer, texture: WebGLTexture} => {
+        // NOTE: 最終パスならフレームバッファは不要なので生成しません
+        if (pass.type === PassType.FinalImage) {
+          return {frameBuffer: null, texture: null};
+        }
+
         let width = pass.uniforms.iResolution.value[0];
         let height = pass.uniforms.iResolution.value[1];
-        let type = gl.FLOAT;
-        let format = gl.RGBA32F;
-        let filter = gl.LINEAR;
+        let type: number = gl.FLOAT;
+        let format: number = gl.RGBA32F;
+        let filter: number = gl.LINEAR;
 
         if (pass.type === PassType.Sound) {
           width = SOUND_WIDTH;
@@ -276,7 +279,7 @@ export class Chromatiq {
         gl.bindRenderbuffer(gl.RENDERBUFFER, null);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-        return [frameBuffer, texture];
+        return {frameBuffer: frameBuffer, texture: texture};
       };
 
       const initPass = (program: WebGLProgram, index: number, type: PassType, scale: number): Pass => {
@@ -323,23 +326,15 @@ export class Chromatiq {
         }
 
         pass.locations = createLocations(pass);
-
-        // NOTE: 最終パスならフレームバッファは不要なので生成しません
-        if (pass.type !== PassType.FinalImage) {
-          let front = setupFrameBuffer(pass);
-          let back = setupFrameBuffer(pass);
-          pass.frameBufferFront = front[0];
-          pass.textureFront = front[1];
-          pass.frameBufferBack = back[0];
-          pass.textureBack = back[1];
-        }
+        pass.front = setupFrameBuffer(pass);
+        pass.back = setupFrameBuffer(pass);
 
         return pass;
       };
 
       const renderPass = (pass: Pass): void => {
         gl.useProgram(pass.program);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, pass.frameBufferFront);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, pass.front.frameBuffer);
 
         // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -371,10 +366,10 @@ export class Chromatiq {
                 gl.bindTexture(gl.TEXTURE_2D, textTexture);
               } else {
                 const i = Math.min(Math.floor(this.debugFrameNumber), imagePasses.length - 1);
-                gl.bindTexture(gl.TEXTURE_2D, imagePasses[i].textureBack);
+                gl.bindTexture(gl.TEXTURE_2D, imagePasses[i].back.texture);
               }
             } else {
-              gl.bindTexture(gl.TEXTURE_2D, imagePasses[uniform.value].textureBack);
+              gl.bindTexture(gl.TEXTURE_2D, imagePasses[uniform.value].back.texture);
             }
 
             // methods[uniform.type].call(gl, pass.locations[key], textureUnitIds[key]);
@@ -395,13 +390,9 @@ export class Chromatiq {
         gl.useProgram(null);
 
         // swap
-        let tmpFrameBuffer = pass.frameBufferFront;
-        pass.frameBufferFront = pass.frameBufferBack;
-        pass.frameBufferBack = tmpFrameBuffer;
-
-        let tmpTexture = pass.textureFront;
-        pass.textureFront = pass.textureBack;
-        pass.textureBack = tmpTexture;
+        let tmp = pass.front;
+        pass.front = pass.back;
+        pass.back = tmp;
       };
 
       this.setSize = (width: number, height: number): void => {
@@ -412,20 +403,13 @@ export class Chromatiq {
         gl.viewport(0, 0, width, height);
 
         imagePasses.forEach((pass) => {
-          gl.deleteFramebuffer(pass.frameBufferFront);
-          gl.deleteFramebuffer(pass.frameBufferBack);
-          gl.deleteTexture(pass.textureFront);
-          gl.deleteTexture(pass.textureBack);
+          gl.deleteFramebuffer(pass.front.frameBuffer);
+          gl.deleteFramebuffer(pass.back.frameBuffer);
+          gl.deleteTexture(pass.front.texture);
+          gl.deleteTexture(pass.back.texture);
           pass.uniforms.iResolution.value = [width * pass.scale, height * pass.scale, 0];
-
-          if (pass.type !== PassType.FinalImage) {
-            let front = setupFrameBuffer(pass);
-            let back = setupFrameBuffer(pass);
-            pass.frameBufferFront = front[0];
-            pass.textureFront = front[1];
-            pass.frameBufferBack = back[0];
-            pass.textureBack = back[1];
-          }
+          pass.front = setupFrameBuffer(pass);
+          pass.back = setupFrameBuffer(pass);
         });
       };
 
