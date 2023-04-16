@@ -738,9 +738,13 @@ vec2 mainSound( int samp, float time )
 {
     vec2 v = vec2(0);
     // v += fullSong(time);
-    v += bassDrop1(time);
-    v += vec2(kick1(mod(time, 0.5)));
-    
+    // v += bassDrop1(time);
+
+    v += hat1(mod(time, 0.25)) * vec2(0.8,1.0);
+    v += hat1(mod(time-0.14, 0.25)) * vec2(0.3,-0.2);
+    v += snare1(mod(time, 1.));
+    v += kick1(mod(time + 0.5, 1.));
+
     //v = fullChorus(time);
     //v += vec2(kick1(mod(time, 0.5)));
     

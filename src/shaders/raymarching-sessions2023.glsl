@@ -76,15 +76,24 @@ vec4 map(vec3 pos) {
     float D = 32.;
 
     vec3 p1 = pos;
-    // p1.y += H;
-    // opRep(p1.z, 2. * D);
+    if (beat < 24.)
+    {
+        p1.y -= mix(-H - 2., 0., beat / 24.);
+    }
 
-    vec4 _IFS_Rot = vec4(0.34, -0.28 + 0. * sin(beatPhase / 4.), 1.03, 0.);
+    vec4 _IFS_Rot = vec4(0.34 + sin(beatPhase / 4.), -0.28, 1.03, 0.);
     vec4 _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.);
     float _IFS_Blend = 1.;
-    float _IFS_Iteration = 0. * mod(beatPhase, 4.) + 2.;
+    float _IFS_Iteration = 0. * mod(beatPhase, 4.) + 3.;
     vec4 _IFS_BoxBase = vec4(1, 1, 1, 0);
     vec4 _IFS_BoxEmissive = vec4(0.05, 1.05, 1.05, 0);
+
+    if (beat < 24.)
+    {
+        _IFS_Rot *= 0.;
+        _IFS_Offset *= 0.;
+        _IFS_Iteration = 2.;
+    }
 
     p1 -= _IFS_Offset.xyz;
 
@@ -98,26 +107,26 @@ vec4 map(vec3 pos) {
         rot(p1.xy, TAU * _IFS_Rot.z);
     }
 
-    opUnion(m, sdBox(p1, _IFS_BoxBase.xyz), SOL, 0.1, 0.5);
-    opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, 1.1, 0.5 + 0. * fract(beat + length(p1)));
-    opUnion(m, sdBox(p1, _IFS_BoxEmissive.yxz * _IFS_BoxEmissive.w), SOL, 1.1, 0.5);
+    float hue = 0.5 + 0. * fract(beat + length(p1));
+
+    opUnion(m, sdBox(p1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
+    opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, 1.1 * step(abs(p1.y) / 1.2, cos(beatTau)), hue);
+    opUnion(m, sdBox(p1, _IFS_BoxEmissive.yzx), SOL, 1.1 * step(abs(p1.z) / 1.2, cos(beatTau)), hue);
 
     vec4 mp = vec4(1, VOL, 0, 0);
-    opUnion(mp, sdBox(pp1, _IFS_BoxBase.xyz), SOL, 0.1, 0.5);
-    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, 1.1, 0.5);
-    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yxz * _IFS_BoxEmissive.w), SOL, 1.1, 0.5);
+    opUnion(mp, sdBox(pp1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
+    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, 1.1 * step(abs(p1.y) / 1.2, cos(beatTau)), hue);
+    // opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, 1.1, hue + 0.2);
 
-    m = mix(mp, m, fract(_IFS_Iteration));
+    //m = mix(mp, m, fract(_IFS_Iteration));
 
-    // background
+    // room
     vec3 p2 = pos;
-    // p2.y -= -H;
     p2 = abs(p2);
-    // opUnion(m, sdBox(p2 + vec3(0, H, 0), vec3(W, a, D)), SOL, 0.6, 0.5);
     float th = -step(mod(beat, 8.), 4.);
-    opUnion(m, sdBox(p2 - vec3(0, H, 0), vec3(W, a, D)), SOL, roughness + 0.*step(0., pos.y) * step(sin(p2.x), th), 10.0);
-    opUnion(m, sdBox(p2 - vec3(0, 0, D), vec3(W, H, a)), SOL, roughness + step(sin(p2.y), 0.), 10.0);
-    opUnion(m, sdBox(p2 - vec3(W, 0, 0), vec3(a, H, D)), SOL, roughness + step(sin(p2.z), th), 10.0);
+    opUnion(m, sdBox(p2 - vec3(0, H, 0), vec3(W, a, D)), SOL, roughness + 0.*step(0., pos.y) * step(sin(p2.x), th), 10.0);  // floor
+    opUnion(m, sdBox(p2 - vec3(0, 0, D), vec3(W, H, a)), SOL, roughness + step(sin(p2.y), 0.), 10.0);  // door
+    opUnion(m, sdBox(p2 - vec3(W, 0, 0), vec3(a, H, D)), SOL, roughness + step(sin(p2.z), th), 10.0);  // left right wall
 
     return m;
 }
