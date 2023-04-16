@@ -148,18 +148,12 @@ export const animateUniforms = (time: number, debugCamera: boolean, debugDisable
   });
 
   new Timeline(beat % 128)
-    .then(16 , (t) => {
-      camera = new Vector3(-4.379722982532216 - 0.1 * t, 2.7148724854688524, -0.28991836612215305).add(Vector3.fbm(t).scale(0.01));
-      target = new Vector3(-0.5453302285259057, 2.2577012315588685, 0.49141768491439874);
-      chromatiq.uniforms.gCameraFov = 44;
+    .then(16 * 10000 , (t) => {
+      camera = new Vector3(-6.21139322717302, 6.010495939159999, 22.503220238985616).add(Vector3.fbm(t).scale(0.01));
+      target = new Vector3(5.343769275887814, -3.8719316266245003, -21.2988108700382).add(camera);
+      chromatiq.uniforms.gCameraFov = 90;
 
-      chromatiq.uniforms.gDirectionalLightX = 0.2 + t * 0.05;
-      chromatiq.uniforms.gDirectionalLightY = 0.59;
-      chromatiq.uniforms.gDirectionalLightZ = 0.32;
-      chromatiq.uniforms.gFogDensity = 0.06;
-
-      chromatiq.uniforms.gMandelboxScale = 2.88621239103946;
-      chromatiq.uniforms.gSceneEps = 0.0007;
+      // chromatiq.uniforms.gMandelboxScale = 2.88621239103946;
     })
     .over(() => {
       // デモ終了後

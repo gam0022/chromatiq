@@ -737,14 +737,16 @@ vec2 fullSong(float time)
 vec2 mainSound( int samp, float time )
 {
     vec2 v = vec2(0);
-    v = fullSong(time);
+    // v += fullSong(time);
+    v += bassDrop1(time);
+    v += vec2(kick1(mod(time, 0.5)));
     
-    //v = fullChorus(time - 20., 10000.);
-    //v = vec2(kick1(mod(time, 0.5)));
+    //v = fullChorus(time);
+    //v += vec2(kick1(mod(time, 0.5)));
     
     //v = fullDrop1(time);
     
-    //v = fermata1(time);
+    // v += pad1(mod(time, 4.0), vec4(440.0, 200.0, 300.0, 660.) * (mod(time, 4.0) < 2. ? 1.0 : 2.0), 8000., 2.0);
     
     // Avoid clicks at the beginning
     return v * smoothstep(0.,0.01,time);

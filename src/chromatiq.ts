@@ -389,7 +389,7 @@ export class Chromatiq {
         gl.bindVertexArray(null);
         gl.useProgram(null);
 
-        // swap
+        // swap double buffer
         let tmp = pass.front;
         pass.front = pass.back;
         pass.back = tmp;

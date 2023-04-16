@@ -6,8 +6,6 @@ uniform float gCameraTargetY;  // 3.4515422110479044 -100 100
 uniform float gCameraTargetZ;  // -0.21633410393024527 -100 100
 uniform float gCameraFov;      // 37.88049605411499 0 180
 
-uniform float gUseBackbuffer;      // 0.5 0 1
-
 #define opRep(p, a) p = mod(p, a) - a * 0.5
 #define opRepLim(p, c, l) p = p - c * clamp(floor(p / c + 0.5), -l, l);
 
@@ -193,8 +191,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 #define DEBUG_CAMERA
 #ifdef DEBUG_CAMERA
-    setCamera(abs(vec4(538, 291, 831, 300)), 3.0);
+    // setCamera(abs(vec4(538, 291, 831, 300)), 3.0);
     // setCameraRot(abs(iMouse), 3.);
+    ro = vec3(gCameraEyeX, gCameraEyeY, gCameraEyeZ);
+    target = vec3(gCameraTargetX, gCameraTargetY, gCameraTargetZ);
+    fov = gCameraFov;
 #else
 
     // Room1
@@ -228,12 +229,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     madtracer(ro, rd, hash12(uv2));
     vec3 bufa = texture(iChannel0, uv).xyz;
 
-    if (uv.x > 0.5) bufa *= 0.;
-    
     // fade out
     // scol = mix(scol, vec3(0), remap01(beat, 4. * 70., 4. * 72.));
-    
-    // fragColor = saturate(vec4(1. * scol + 0.0 * bufa, 0.));
     fragColor = saturate(vec4(0.7 * scol + 0.7 * bufa, 0.));
 #endif
 }
