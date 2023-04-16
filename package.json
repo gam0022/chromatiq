@@ -17,8 +17,6 @@
   "author": "gam0022",
   "license": "MIT",
   "devDependencies": {
-    "@types/dat-gui": "^0.6.3",
-    "@types/dat.gui": "^0.7.5",
     "@types/file-saver": "^2.0.1",
     "@types/three": "^0.103.2",
     "@typescript-eslint/eslint-plugin": "^2.33.0",
@@ -47,7 +45,6 @@
   },
   "dependencies": {
     "@types/webpack": "^4.41.5",
-    "dat.gui": "^0.7.6",
     "file-saver": "^2.0.2"
   }
 }
