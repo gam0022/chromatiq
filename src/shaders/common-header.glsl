@@ -38,7 +38,7 @@ const float PI = 3.14159265359;
 const float TAU = 6.28318530718;
 const float PIH = 1.57079632679;
 
-#define BPM 140.0
+#define BPM 120.0
 #define beat (iTime * BPM / 60.0)
 #define saturate(x) clamp(x, 0., 1.)
 

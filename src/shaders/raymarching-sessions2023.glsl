@@ -228,11 +228,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     madtracer(ro, rd, hash12(uv2));
     vec3 bufa = texture(iChannel0, uv).xyz;
 
-    if (uv.x > gUseBackbuffer) bufa *= 0.;
+    if (uv.x > 0.5) bufa *= 0.;
     
     // fade out
     // scol = mix(scol, vec3(0), remap01(beat, 4. * 70., 4. * 72.));
     
-    fragColor = saturate(vec4(1. * scol + 0.0 * bufa, 0.));
+    // fragColor = saturate(vec4(1. * scol + 0.0 * bufa, 0.));
+    fragColor = saturate(vec4(0.7 * scol + 0.7 * bufa, 0.));
 #endif
 }

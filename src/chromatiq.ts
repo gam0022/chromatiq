@@ -297,7 +297,7 @@ export class Chromatiq {
           },
           iTime: { type: "f", value: 0.0 },
           iPrevPass: { type: "t", value: Math.max(pass.index - 1, 0) },
-          iChannel0: { type: "t", value: 0 },
+          iChannel0: { type: "t", value: pass.index },
           iBeforeBloom: {
             type: "t",
             value: Math.max(bloomPassBeginIndex - 1, 0),
