@@ -11,8 +11,9 @@ export const chromatiq = new Chromatiq(
   // Image Shaders
   require("./shaders/common-header.glsl").default,
   [
-    require("./shaders/raymarching-mandel.glsl").default,
-    require("./shaders/post-effect.glsl").default,
+    // require("./shaders/raymarching-mandel.glsl").default,
+    require("./shaders/raymarching-sessions2023.glsl").default,
+    // require("./shaders/post-effect.glsl").default,
     // require("./shaders/effects/debug-circle.glsl").default,
   ],
 
@@ -25,7 +26,7 @@ export const chromatiq = new Chromatiq(
   require("./shaders/build-in/bloom-final.glsl").default,
 
   // Sound Shader
-  require("./shaders/sound-resimulated.glsl").default,
+  require("./shaders/sound-sessions2023.glsl").default,
 
   // Text Texture
   (gl) => {

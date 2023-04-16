@@ -295,6 +295,7 @@ export class Chromatiq {
           },
           iTime: { type: "f", value: 0.0 },
           iPrevPass: { type: "t", value: Math.max(pass.index - 1, 0) },
+          iChannel0: { type: "t", value: Math.max(pass.index, 0) },
           iBeforeBloom: {
             type: "t",
             value: Math.max(bloomPassBeginIndex - 1, 0),
@@ -347,6 +348,7 @@ export class Chromatiq {
             iBeforeBloom: 1,
             iPairBloomDown: 2,
             iTextTexture: 3,
+            iChannel0: 4,
           };
 
           if (uniform.type === "t") {
