@@ -237,9 +237,23 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
           }
         );
       },
+      copyCameraGLSL: (): void => {
+        const text = `ro = vec3(${camera.position.x}, ${camera.position.y}, ${camera.position.z});
+target = vec3(${controls.target.x}, ${controls.target.y}, ${controls.target.z});
+fov = ${chromatiq.uniforms.gCameraFov};`;
+        navigator.clipboard.writeText(text).then(
+          function () {
+            console.log("copied to clipboard");
+          },
+          function () {
+            console.log("failed to copy");
+          }
+        );
+      },
     };
     debugFolder.add(saevFunctions, "copyCamera");
     debugFolder.add(saevFunctions, "copyCamera2");
+    debugFolder.add(saevFunctions, "copyCameraGLSL");
     miscFolder.add(saevFunctions, "saveImage");
     miscFolder.add(saevFunctions, "saveImageSequence");
     miscFolder.add(saevFunctions, "saveSound");
@@ -453,6 +467,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
           chromatiq.uniforms.gCameraTargetX = controls.target.x;
           chromatiq.uniforms.gCameraTargetY = controls.target.y;
           chromatiq.uniforms.gCameraTargetZ = controls.target.z;
+          chromatiq.uniforms.gCameraDebug = config.debugCamera ? 1: 0;
 
           // gui.updateDisplay();
           chromatiq.needsUpdate = true;

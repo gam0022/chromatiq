@@ -147,6 +147,7 @@ export const animateUniforms = (time: number, debugCamera: boolean, debugDisable
     chromatiq.uniforms[uniform.key] = uniform.initValue;
   });
 
+  /*
   new Timeline(beat % 128)
     .then(16 * 10000 , (t) => {
       camera = new Vector3(-6.21139322717302, 6.010495939159999, 22.503220238985616).add(Vector3.fbm(t).scale(0.01));
@@ -159,6 +160,7 @@ export const animateUniforms = (time: number, debugCamera: boolean, debugDisable
       // デモ終了後
       // chromatiq.uniforms.gBlend = -1;
     });
+  */
 
   if (!PRODUCTION && debugCamera) {
     return;

@@ -97,4 +97,3 @@ vec2 textUv(vec2 uv, float id, vec2 p, float scale) {
 
     return uv;
 }
-
