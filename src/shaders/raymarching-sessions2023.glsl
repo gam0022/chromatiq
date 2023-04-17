@@ -72,23 +72,24 @@ vec4 map(vec3 pos) {
 
     vec3 p1 = pos;
 
+    boxPos = vec3(0.);
+    if (beat < 22.) boxPos.y = -12.;
+    else if (beat < 40.) boxPos.y = -10. + (beat - 24.) / 2.;
+
     vec4 _IFS_Rot = vec4(0.34 + sin(beatPhase / 4.), -0.28, 1.03, 0.);
     vec4 _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.);
     float _IFS_Blend = 1.;
-    float _IFS_Iteration = 2.;
+    float _IFS_Iteration = mod(floor(beat / 8.)+(.5+.5*cos(TAU * .5 * exp(-10.0*fract(beat / 8.)))), 3.) + 1.;
     vec4 _IFS_BoxBase = vec4(1, 1, 1, 0);
     vec4 _IFS_BoxEmissive = vec4(0.05, 1.05, 1.05, 0);
 
-    boxPos = vec3(0.);
-
-    if (beat < 4. * 20.) {
+    if (beat < 48.) {
         _IFS_Rot *= 0.;
         _IFS_Offset *= 0.;
         _IFS_Iteration = 2.;
-        boxPos.y = mix(-H - 8., 0., remap01(beat, 4. * 6., 4. * 16.));
-    } else if (beat < 4. * 24.) {
-        _IFS_Rot = vec4(0.34 + sin(beatPhase / 4.), -0.28, 1.03, 0.);
-        _IFS_Iteration = 3.;
+    } else if (beat < 52.) {
+        // _IFS_Rot = vec4(0.34 + sin(beatPhase / 4.), -0.28, 1.03, 0.);
+        // _IFS_Iteration = 3.;
     }
 
     p1 -= (boxPos + _IFS_Offset.xyz);
@@ -112,9 +113,9 @@ vec4 map(vec3 pos) {
     vec4 mp = vec4(1, VOL, 0, 0);
     opUnion(mp, sdBox(pp1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
     opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, 1.1 * step(abs(p1.y) / 1.2, cos(beatTau)), hue);
-    // opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, 1.1, hue + 0.2);
+    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, 1.1, hue + 0.2);
 
-    //m = mix(mp, m, fract(_IFS_Iteration));
+    m = mix(mp, m, fract(_IFS_Iteration));
 
     // room
     vec3 p2 = abs(pos);
@@ -128,8 +129,8 @@ vec4 map(vec3 pos) {
     opUnion(m, sdBox(p2 - vec3(W, 0, 0), vec3(a, H, D)), SOL, roughness + emi, 10.0);  // left right wall
 
     // camera light
-    vec3 light = ro - normalize(target - ro) * 3.0;
-    opUnion(m, length(pos - light) - 1.0, SOL, 1.1, 10.0);
+    // vec3 light = ro - normalize(target - ro) * 3.0;
+    // opUnion(m, length(pos - light) - 1.0, SOL, 1.1, 10.0);
 
     return m;
 }
@@ -210,35 +211,36 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 noise = hash23(vec3(iTime, fragCoord)) - 0.5;  // AA
     vec2 uv2 = (2. * (fragCoord.xy + noise) - iResolution.xy) / iResolution.x;
 
-    float FD = 675. * 3.;  // Final Room Depth
-    fov = 80.;
+    // Timeline
+    TL(beat, 8.) {
+        ro = vec3(9.5, -1.36, -12.3 + t * .3);
+        target = vec3(0.0, -2.19, 0.0);
+        fov = 100.;
+    } else TL(beat, 16.) {
+        ro = vec3(5.5, -5, -1.2);
+        target = vec3(0., -8., -0.);
+        fov = 100.0 + t;
+    } else TL(beat, 24.) {
+        ro = vec3(5.5, -5, -1.2);
+        target = vec3(0., -8., -0.);
+        fov = 60.0 + t;
+    } else TL(beat, 40.) {
+        ro = vec3(10.8, -4.2, -7.2 + t * .1);
+        target = vec3(0., -5., -0.);
+        fov = 93.77124567016284;
+    } else {
+        float dice = hash11(floor(beat / 4. + 2.) * 123.);
+        if (dice < 0.8) ro = vec3(8. * cos(beatTau / 128.), dice * 8. - 3., 8. * sin(beatTau / 128.));
+        else ro = vec3(9.5 - dice * 20., -1.3, -12.3);
+
+        target = boxPos;
+        fov = 120.;
+    }
 
     if (gCameraDebug > 0.) {
         ro = vec3(gCameraEyeX, gCameraEyeY, gCameraEyeZ);
         target = vec3(gCameraTargetX, gCameraTargetY, gCameraTargetZ);
         fov = gCameraFov;
-    } else {
-        TL(beat, 4. * 2.) {
-            ro = vec3(9.575958920910848, -1.3648958001322042, -12.315157917261566 + t * .3);
-            target = vec3(0.0, -2.1952965182512547, 0.0);
-            fov = 100.44;
-        } else TL(beat, 4. * 4.) {
-            ro = vec3(5.5, -5, -1.2);
-            target = vec3(0., -8., -0.);
-            fov = 100.0 + t;
-        } else TL(beat, 4. * 8.) {
-            ro = vec3(5.5, -5, -1.2);
-            target = vec3(0., -8., -0.);
-            fov = 60.0 + t;
-        } else TL(beat, 4. * 12.) {
-            ro = vec3(10.8, -4.2, -7.2 + t * .1);
-            target = vec3(0., -5., -0.);
-            fov = 93.77124567016284;
-        } else {
-            ro = vec3(8. * cos(beatTau / 128.), -0.2, 8. * sin(beatTau / 128.));
-            target = boxPos;
-            fov = 120.;
-        }
     }
     
     // setCamera(vec4(538, 291, 831, 492), 5.);

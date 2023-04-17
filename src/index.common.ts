@@ -130,7 +130,7 @@ class Timeline {
 }
 
 export const animateUniforms = (time: number, debugCamera: boolean, debugDisableReset: boolean): void => {
-  const bpm = 128;
+  const bpm = 120;
   const beat = (time * bpm) / 60;
 
   let camera = new Vector3(0, 0, 10);
