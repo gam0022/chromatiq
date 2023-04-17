@@ -73,6 +73,29 @@ vec3 hashHs(vec3 n, vec3 seed) {
     return r;
 }
 
+// https://www.shadertoy.com/view/lsf3WH
+// Noise - value - 2D by iq
+float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash12(i + vec2(0.0, 0.0)), hash12(i + vec2(1.0, 0.0)), u.x), mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+float fbm(vec2 uv) {
+    float f = 0.0;
+    mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+    f = 0.5000 * noise(uv);
+    uv = m * uv;
+    f += 0.2500 * noise(uv);
+    uv = m * uv;
+    f += 0.1250 * noise(uv);
+    uv = m * uv;
+    f += 0.0625 * noise(uv);
+    uv = m * uv;
+    return f;
+}
+
 vec3 tap4(sampler2D tex, vec2 uv, vec2 texelSize) {
     vec4 d = texelSize.xyxy * vec4(-1.0, -1.0, 1.0, 1.0);
 

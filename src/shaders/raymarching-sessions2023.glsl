@@ -90,6 +90,10 @@ vec4 map(vec3 pos) {
     } else if (beat < 52.) {
         // _IFS_Rot = vec4(0.34 + sin(beatPhase / 4.), -0.28, 1.03, 0.);
         // _IFS_Iteration = 3.;
+    } else if (beat < 80.) {
+    } else {
+        _IFS_Offset *= 2. * hash11(floor(beat) * 0.3123);
+        _IFS_Rot = vec4(0.34 + sin(beatPhase), -0.28, 1.03, 0.);
     }
 
     p1 -= (boxPos + _IFS_Offset.xyz);
@@ -104,28 +108,36 @@ vec4 map(vec3 pos) {
         rot(p1.xy, TAU * _IFS_Rot.z);
     }
 
-    float hue = 0.5 + 0. * fract(beat + length(p1));
+    pp1 = p1;
+
+    float emi = 1.1 * abs(cos((beatTau - p1.y) / 4.));
+    if (mod(beat, 8.) > 4.) emi = 1.1 * saturate(sin(beatTau * 4.));
+
+    float hue = 0.5;
+    if (beat < 96.) hue = 0.5;
+    else if (beat < 120.) hue = fract(beat + length(p1));
+    else hue = 0.0;
 
     opUnion(m, sdBox(p1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
-    opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, 1.1 * step(abs(p1.y) / 1.2, cos(beatTau)), hue);
-    opUnion(m, sdBox(p1, _IFS_BoxEmissive.yzx), SOL, 1.1 * step(abs(p1.z) / 1.2, cos(beatTau)), hue);
+    opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, emi, hue);
+    opUnion(m, sdBox(p1, _IFS_BoxEmissive.yzx), SOL, emi, hue);
 
-    vec4 mp = vec4(1, VOL, 0, 0);
+    vec4 mp = vec4(2, VOL, 0, 0);
     opUnion(mp, sdBox(pp1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
-    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, 1.1 * step(abs(p1.y) / 1.2, cos(beatTau)), hue);
-    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, 1.1, hue + 0.2);
+    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, emi, hue);
+    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, emi, hue);
 
-    m = mix(mp, m, fract(_IFS_Iteration));
+    // m = mix(mp, m, fract(_IFS_Iteration));
+    m = mp;
 
     // room
     vec3 p2 = abs(pos);
-    float th = -step(mod(beat, 8.), 4.);
     float hole = sdBox(pos - vec3(0., -H - 0.5, 0.), vec3(1.1) * smoothstep(4., 12., beat));
     opUnion(m, max(sdBox(p2 - vec3(0, H + 4., 0), vec3(W, 4., D)), -hole), SOL, roughness, 10.0);  // floor
     opUnion(m, sdBox(p2 - vec3(0, 0, D), vec3(W, H, a)), SOL, roughness + step(sin(p2.y), 0.), 10.0);  // door
 
     float id = floor((pos.z + D) / 4.);
-    float emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
+    emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
     opUnion(m, sdBox(p2 - vec3(W, 0, 0), vec3(a, H, D)), SOL, roughness + emi, 10.0);  // left right wall
 
     // camera light
@@ -237,15 +249,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         fov = 120.;
     }
 
+    if (beat < 120.0) 0.;
+    else ro += 4. * fbm(vec2(beat / 4., 1.23));
+
     if (gCameraDebug > 0.) {
         ro = vec3(gCameraEyeX, gCameraEyeY, gCameraEyeZ);
         target = vec3(gCameraTargetX, gCameraTargetY, gCameraTargetZ);
         fov = gCameraFov;
     }
-    
-    // setCamera(vec4(538, 291, 831, 492), 5.);
-
-// #endif
 
     vec3 up = vec3(0, 1, 0);
     vec3 fwd = normalize(target - ro);
