@@ -72,13 +72,12 @@ vec4 map(vec3 pos) {
 
     vec3 p1 = pos;
 
-    boxPos = vec3(0.);
+    boxPos = vec3(0);
     if (beat < 22.) boxPos.y = -12.;
     else if (beat < 40.) boxPos.y = -10. + (beat - 24.) / 2.;
 
     vec4 _IFS_Rot = vec4(0.34 + sin(beatPhase / 4.), -0.28, 1.03, 0.);
     vec4 _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.);
-    float _IFS_Blend = 1.;
     float _IFS_Iteration = mod(floor(beat / 8.)+(.5+.5*cos(TAU * .5 * exp(-10.0*fract(beat / 8.)))), 3.) + 1.;
     vec4 _IFS_BoxBase = vec4(1, 1, 1, 0);
     vec4 _IFS_BoxEmissive = vec4(0.05, 1.05, 1.05, 0);
@@ -86,29 +85,30 @@ vec4 map(vec3 pos) {
     if (beat < 48.) {
         _IFS_Rot *= 0.;
         _IFS_Offset *= 0.;
-        _IFS_Iteration = 2.;
+        _IFS_Iteration = 0.;
     } else if (beat < 52.) {
         // _IFS_Rot = vec4(0.34 + sin(beatPhase / 4.), -0.28, 1.03, 0.);
         // _IFS_Iteration = 3.;
     } else if (beat < 80.) {
+        // 
     } else {
         _IFS_Offset *= 2. * hash11(floor(beat) * 0.3123);
         _IFS_Rot = vec4(0.34 + sin(beatPhase), -0.28, 1.03, 0.);
     }
 
+    // _IFS_Iteration = 4.;
+
     p1 -= (boxPos + _IFS_Offset.xyz);
 
     vec3 pp1 = p1;
 
-    for(int i = 0; i < int(_IFS_Iteration); i++){
-        pp1 = p1;
+    for (int i = 0; i < int(_IFS_Iteration); i++) {
+        pp1 = p1 +  + _IFS_Offset.xyz;
         p1 = abs(p1 + _IFS_Offset.xyz) - _IFS_Offset.xyz;
         rot(p1.xz, TAU * _IFS_Rot.x);
         rot(p1.zy, TAU * _IFS_Rot.y);
         rot(p1.xy, TAU * _IFS_Rot.z);
     }
-
-    pp1 = p1;
 
     float emi = 1.1 * abs(cos((beatTau - p1.y) / 4.));
     if (mod(beat, 8.) > 4.) emi = 1.1 * saturate(sin(beatTau * 4.));
@@ -127,8 +127,7 @@ vec4 map(vec3 pos) {
     opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, emi, hue);
     opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, emi, hue);
 
-    // m = mix(mp, m, fract(_IFS_Iteration));
-    m = mp;
+    m = mix(mp, m, fract(_IFS_Iteration));
 
     // room
     vec3 p2 = abs(pos);
