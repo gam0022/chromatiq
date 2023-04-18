@@ -97,11 +97,11 @@ vec4 map(vec3 pos) {
     vec4 _IFS_BoxBase = vec4(1, 1, 1, 0);
     vec4 _IFS_BoxEmissive = vec4(0.05, 1.05, 1.05, 0);
 
-    if (beat < 48.) {
+    if (beat < 40.) {
         _IFS_Rot *= 0.;
         _IFS_Offset *= 0.;
         _IFS_Iteration = 1.;
-    } else if (beat < 60.) {
+    } else if (beat < 48.) {
         float a = saturate(phase((beat - 48.) / 4.));
         _IFS_Iteration = 1. + a;
         _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.) * a;
@@ -167,7 +167,7 @@ vec4 map(vec3 pos) {
 
     if (beat < 32.)
         emi *= sin(beat * 48.);
-    else if (beat < 48.)
+    else if (beat < 40.)
         emi *= 1.;
     else if (beat < 120.)
         emi *= step(id, mod(beat * 4., 16.));
@@ -260,27 +260,42 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
     // Timeline
     TL(beat, 8.) {
-        ro = vec3(9.5, -1.36, -12.3 + t * .3);
+        ro = vec3(0, -1.36, -12.3 + t * .3);
         target = vec3(0.0, -2.19, 0.0);
         fov = 100.;
     }
     else TL(beat, 16.) {
+        ro = vec3(9.5, -1.36, -12.3 + t * .3);
+        target = vec3(0.0, -2.19, 0.0);
+        fov = 100.;
+    }
+    else TL(beat, 20.) {
         ro = vec3(5.5, -5, -1.2);
         target = vec3(0., -8., -0.);
         fov = 100.0 + t;
     }
-    else TL(beat, 24.) {
+    else TL(beat, 28.) {
         ro = vec3(5.5, -5, -1.2);
         target = vec3(0., -8., -0.);
         fov = 60.0 + t;
     }
-    else TL(beat, 40.) {
+    else TL(beat, 34.) {
         ro = vec3(10.8, -4.2, -7.2 + t * .1);
         target = vec3(0., -5., -0.);
-        fov = 93.77124567016284;
+        fov = 93.;
+    }
+    else TL(beat, 40.) {
+        ro = vec3(0., 1., -12.3);
+        target = boxPos;
+        fov = 100. - t;
+    }
+    else TL(beat, 60.) {
+        ro = vec3(9.5, 1., -7.3) + fbm(vec2(beat / 4., 1.23));
+        target = boxPos;
+        fov = 60. + t;
     }
     else {
-        float dice = hash11(floor(beat / 4. + 2.) * 123.);
+        float dice = hash11(floor(beat / 8. + 2.) * 123.);
         if (dice < 0.8)
             ro = vec3(8. * cos(beatTau / 128.), mix(-6., 6., dice), 8. * sin(beatTau / 128.));
         else
