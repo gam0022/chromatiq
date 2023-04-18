@@ -56,7 +56,6 @@ float sdBox(vec3 p, vec3 b) {
 
 void rot(inout vec2 p, float a) { p *= mat2(cos(a), sin(a), -sin(a), cos(a)); }
 
-
 vec4 map(vec3 pos) {
     vec4 m = vec4(2, VOL, 0, 0);
     // x: Distance
@@ -73,12 +72,14 @@ vec4 map(vec3 pos) {
     vec3 p1 = pos;
 
     boxPos = vec3(0);
-    if (beat < 22.) boxPos.y = -12.;
-    else if (beat < 40.) boxPos.y = -10. + (beat - 24.) / 2.;
+    if (beat < 22.)
+        boxPos.y = -12.;
+    else if (beat < 40.)
+        boxPos.y = -10. + (beat - 24.) / 2.;
 
     vec4 _IFS_Rot = vec4(0.34 + sin(beatPhase / 4.), -0.28, 1.03, 0.);
     vec4 _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.);
-    float _IFS_Iteration = mod(floor(beat / 8.)+(.5+.5*cos(TAU * .5 * exp(-10.0*fract(beat / 8.)))), 3.) + 1.;
+    float _IFS_Iteration = mod(floor(beat / 8.) + (.5 + .5 * cos(TAU * .5 * exp(-10.0 * fract(beat / 8.)))), 3.) + 1.;
     vec4 _IFS_BoxBase = vec4(1, 1, 1, 0);
     vec4 _IFS_BoxEmissive = vec4(0.05, 1.05, 1.05, 0);
 
@@ -90,7 +91,7 @@ vec4 map(vec3 pos) {
         // _IFS_Rot = vec4(0.34 + sin(beatPhase / 4.), -0.28, 1.03, 0.);
         // _IFS_Iteration = 3.;
     } else if (beat < 80.) {
-        // 
+        //
     } else {
         _IFS_Offset *= 2. * hash11(floor(beat) * 0.3123);
         _IFS_Rot = vec4(0.34 + sin(beatPhase), -0.28, 1.03, 0.);
@@ -103,7 +104,7 @@ vec4 map(vec3 pos) {
     vec3 pp1 = p1;
 
     for (int i = 0; i < int(_IFS_Iteration); i++) {
-        pp1 = p1 +  + _IFS_Offset.xyz;
+        pp1 = p1 + +_IFS_Offset.xyz;
         p1 = abs(p1 + _IFS_Offset.xyz) - _IFS_Offset.xyz;
         rot(p1.xz, TAU * _IFS_Rot.x);
         rot(p1.zy, TAU * _IFS_Rot.y);
@@ -114,9 +115,12 @@ vec4 map(vec3 pos) {
     if (mod(beat, 8.) > 4.) emi = 1.1 * saturate(sin(beatTau * 4.));
 
     float hue = 0.5;
-    if (beat < 96.) hue = 0.5;
-    else if (beat < 120.) hue = fract(beat + length(p1));
-    else hue = 0.0;
+    if (beat < 96.)
+        hue = 0.5;
+    else if (beat < 120.)
+        hue = fract(beat + length(p1));
+    else
+        hue = 0.0;
 
     opUnion(m, sdBox(p1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
     opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, emi, hue);
@@ -132,7 +136,7 @@ vec4 map(vec3 pos) {
     // room
     vec3 p2 = abs(pos);
     float hole = sdBox(pos - vec3(0., -H - 0.5, 0.), vec3(1.1) * smoothstep(4., 12., beat));
-    opUnion(m, max(sdBox(p2 - vec3(0, H + 4., 0), vec3(W, 4., D)), -hole), SOL, roughness, 10.0);  // floor
+    opUnion(m, max(sdBox(p2 - vec3(0, H + 4., 0), vec3(W, 4., D)), -hole), SOL, roughness, 10.0);      // floor
     opUnion(m, sdBox(p2 - vec3(0, 0, D), vec3(W, H, a)), SOL, roughness + step(sin(p2.y), 0.), 10.0);  // door
 
     float id = floor((pos.z + D) / 4.);
@@ -214,7 +218,7 @@ void setCameraRot(vec4 v, float roY) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // beat = iTime * BPM / 60.0;
     beatTau = beat * TAU;
-    beatPhase = floor(beat / 2.)+(.5+.5*cos(TAU * .5 * exp(-5.0*fract(beat / 2.))));
+    beatPhase = floor(beat / 2.) + (.5 + .5 * cos(TAU * .5 * exp(-5.0 * fract(beat / 2.))));
 
     vec2 uv = fragCoord.xy / iResolution.xy;
 
@@ -227,29 +231,37 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         ro = vec3(9.5, -1.36, -12.3 + t * .3);
         target = vec3(0.0, -2.19, 0.0);
         fov = 100.;
-    } else TL(beat, 16.) {
+    }
+    else TL(beat, 16.) {
         ro = vec3(5.5, -5, -1.2);
         target = vec3(0., -8., -0.);
         fov = 100.0 + t;
-    } else TL(beat, 24.) {
+    }
+    else TL(beat, 24.) {
         ro = vec3(5.5, -5, -1.2);
         target = vec3(0., -8., -0.);
         fov = 60.0 + t;
-    } else TL(beat, 40.) {
+    }
+    else TL(beat, 40.) {
         ro = vec3(10.8, -4.2, -7.2 + t * .1);
         target = vec3(0., -5., -0.);
         fov = 93.77124567016284;
-    } else {
+    }
+    else {
         float dice = hash11(floor(beat / 4. + 2.) * 123.);
-        if (dice < 0.8) ro = vec3(8. * cos(beatTau / 128.), dice * 8. - 3., 8. * sin(beatTau / 128.));
-        else ro = vec3(9.5 - dice * 20., -1.3, -12.3);
+        if (dice < 0.8)
+            ro = vec3(8. * cos(beatTau / 128.), dice * 8. - 3., 8. * sin(beatTau / 128.));
+        else
+            ro = vec3(9.5 - dice * 20., -1.3, -12.3);
 
         target = boxPos;
         fov = 120.;
     }
 
-    if (beat < 120.0) 0.;
-    else ro += 4. * fbm(vec2(beat / 4., 1.23));
+    if (beat < 120.0)
+        0.;
+    else
+        ro += 4. * fbm(vec2(beat / 4., 1.23));
 
     if (gCameraDebug > 0.) {
         ro = vec3(gCameraEyeX, gCameraEyeY, gCameraEyeZ);
@@ -263,7 +275,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     up = normalize(cross(fwd, right));
     vec3 rd = normalize(right * uv2.x + up * uv2.y + fwd / tan(fov * TAU / 720.));
 
-//#define DEBUG_SCENE
+// #define DEBUG_SCENE
 #ifdef DEBUG_SCENE
     raymarching(ro, rd);
     fragColor = vec4(scol, 1.);
