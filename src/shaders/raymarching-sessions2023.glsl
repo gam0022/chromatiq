@@ -189,6 +189,10 @@ vec4 map(vec3 pos) {
         emi = hash12(floor(pos.yz) + 123.23 * floor(beat * 2.));
         hue = hash12(floor(pos.yz) + 123.23 * floor(beat * 8.));
     }
+    else TL(300.) {
+        emi = step(3., mod(floor((pos.z + D) / 2.), 4.)) * step(1., mod(floor(pos.y - pos.z - 4. * beatPhase), 2.));
+        hue = 10.0;
+    }
 
     opUnion(m, sdBox(p2 - vec3(W + a, 0, 0), vec3(a, H, D)), SOL, roughness + emi, hue);
 
