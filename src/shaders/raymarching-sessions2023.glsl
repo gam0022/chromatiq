@@ -14,6 +14,7 @@ uniform float gCameraDebug;    // 0 0 1
 #define tri(x) (1. - 4. * abs(fract(x) - .5))
 #define phase(x) (floor(x) + .5 + .5 * cos(PI * exp(-5.0 * fract(x))))
 #define IN(start, end) ((start <= beat && beat < end) ? 1. : 0.)
+#define IFIN(start, end) if (start <= beat && beat < end)
 
 vec3 ro, target;
 float fov;
@@ -141,7 +142,7 @@ vec4 map(vec3 pos) {
     float hue = 0.5;
 
     TL(96.) hue = 0.5;
-    else TL(150.) hue = fract(beat + length(p1));
+    else TL(180.) hue = fract(beat + length(p1));
     else hue = 0.0;
 
     opUnion(m, sdBox(p1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
@@ -163,7 +164,7 @@ vec4 map(vec3 pos) {
     // floor and ceil
     TL(60.) emi = step(0., pos.y) * step(p2.x, 2.) * step(p2.z, 8.) * floor(mod(pos.x, 2.0));
     else emi = 0.;
-    opUnion(m, max(sdBox(p2 - vec3(0, H + 4., 0), vec3(W, 4., D)), -hole), SOL, roughness + emi, 10.0);
+    opUnion(m, max(sdBox(p2 - vec3(0, H + 4., 0), vec3(W, 4., D)), -hole), SOL, roughness + emi, 10.);
 
     // door
     emi = step(p2.x, 2.) * step(p2.y, 2.);
@@ -176,10 +177,21 @@ vec4 map(vec3 pos) {
 
     TL(32.) emi *= sin(beat * 48.);
     else TL(30.) emi *= 1.;
-    else TL(96.) emi *= step(id, mod(beat * 4., 16.));
-    else emi = step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.)));
 
-    opUnion(m, sdBox(p2 - vec3(W + a, 0, 0), vec3(a, H, D)), SOL, roughness + emi, 10.0);
+    emi *= step(id, mod(beat * 4., 16.));
+    emi = mix(emi, step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.))), saturate(beat - 120. - pos.y));
+
+    hue = 10.0;
+    IFIN(150., 170.) {
+        emi = hash12(floor(pos.yz) + 123.23 * floor(beat * 2.));
+        hue = 3.65;
+    }
+    IFIN(170., 200.) {
+        emi = hash12(floor(pos.yz) + 123.23 * floor(beat * 2.));
+        hue = hash12(floor(pos.yz) + 123.23 * floor(beat * 8.));
+    }
+
+    opUnion(m, sdBox(p2 - vec3(W + a, 0, 0), vec3(a, H, D)), SOL, roughness + emi, hue);
 
     // camera light
     // vec3 light = ro - normalize(target - ro) * 3.0;
@@ -305,6 +317,21 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         target = boxPos + 0.5 * fbm(vec2(beat / 4., 1.23));
         fov = 60. + t;
     }
+    else TL(118.) {
+        float dice = hash11(floor(beat / 8. + 2.) * 123.);
+        if (dice < 0.8)
+            ro = vec3(8. * cos(beatTau / 128.), mix(-6., 6., dice), 8. * sin(beatTau / 128.));
+        else
+            ro = vec3(9.5 - dice * 20., 1., -12.3);
+
+        target = boxPos;
+        fov = 120.;
+    }
+    else TL(122.) {
+        ro = vec3(-5., 1.0, 18.0);
+        target = vec3(5.0, -1.0, 16.0);
+        fov = 100. - t;
+    }
     else {
         float dice = hash11(floor(beat / 8. + 2.) * 123.);
         if (dice < 0.8)
@@ -316,7 +343,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         fov = 120.;
     }
 
-    ro += IN(120., 180.) * 4. * fbm(vec2(beat / 4., 1.23));
+    ro += 0.1 * fbm(vec2(beat / 4., 1.23));
 
     if (gCameraDebug > 0.) {
         ro = vec3(gCameraEyeX, gCameraEyeY, gCameraEyeZ);
