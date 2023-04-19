@@ -14,7 +14,6 @@ uniform float gCameraDebug;    // 0 0 1
 #define tri(x) (1. - 4. * abs(fract(x) - .5))
 #define phase(x) (floor(x) + .5 + .5 * cos(PI * exp(-5.0 * fract(x))))
 #define IN(start, end) ((start <= beat && beat < end) ? 1. : 0.)
-#define IFIN(start, end) if (start <= beat && beat < end)
 
 vec3 ro, target;
 float fov;
@@ -158,7 +157,7 @@ vec4 map(vec3 pos) {
 
     // room
     vec3 p2 = abs(pos);
-    float hole = sdBox(pos - vec3(0., -H - 0.5, 0.), vec3(1.1) * smoothstep(4., 12., beat));
+    float hole = sdBox(pos - vec3(0., -H - 0.5, 0.), vec3(1.1) * smoothstep(18., 24., beat));
     float emi;
 
     // floor and ceil
@@ -175,18 +174,18 @@ vec4 map(vec3 pos) {
     float id = floor((pos.z + D) / 4.);
     emi = step(1., mod(id, 2.));
 
-    TL(32.) emi *= sin(beat * 48.);
-    else TL(30.) emi *= 1.;
+    TL(18.) emi *= step(id, mod(beat * 4., 16.));
+    TL(28.) emi *= 1.;
+    else TL(200.0) emi *= step(id, mod(beat * 4., 16.));
 
-    emi *= step(id, mod(beat * 4., 16.));
     emi = mix(emi, step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.))), saturate(beat - 120. - pos.y));
 
-    hue = 10.0;
-    IFIN(150., 170.) {
+    TL(150.) hue = 10.;
+    else TL(170.) {
         emi = hash12(floor(pos.yz) + 123.23 * floor(beat * 2.));
         hue = 3.65;
     }
-    IFIN(170., 200.) {
+    else TL(200.) {
         emi = hash12(floor(pos.yz) + 123.23 * floor(beat * 2.));
         hue = hash12(floor(pos.yz) + 123.23 * floor(beat * 8.));
     }
