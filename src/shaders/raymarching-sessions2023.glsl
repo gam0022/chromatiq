@@ -126,11 +126,10 @@ vec4 map(vec3 pos) {
     else TL(180.) hue = fract(beat + length(p1));
     else hue = 0.0;
 
+    vec4 mp = m;
     opUnion(m, sdBox(p1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
     opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, boxEmi, hue);
     // opUnion(m, sdBox(p1, _IFS_BoxEmissive.yzx), SOL, boxEmi, hue);
-
-    vec4 mp = vec4(2, VOL, 0, 0);
     opUnion(mp, sdBox(pp1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
     opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, boxEmi, hue);
     // opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, boxEmi, hue);
@@ -194,7 +193,7 @@ vec3 normal(vec3 p) {
 // https://www.shadertoy.com/view/Xt3cWS
 void madtracer(vec3 ro1, vec3 rd1, float seed) {
     scol = vec3(0);
-    float t = 0., t2 = 0.;
+    float t = seed * .5, t2 = seed;
     vec4 m1, m2;
     vec3 rd2, ro2, nor2;
     for (int i = 0; i < 160; i++) {
@@ -276,14 +275,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         fov = 100. - t;
     }
     else TL(56.) {
-        ro = vec3(0., 3., -9.3);
+        ro = vec3(7. * cos(beatTau / 128.), 1., 7. * sin(beatTau / 128.));
         target = boxPos;
-        fov = 60. + t;
-    }
-    else TL(60.) {
-        ro = vec3(9.5, 1., -7.3) + 0.5 * fbm(vec2(beat / 4., 2.3));
-        target = boxPos + 0.5 * fbm(vec2(beat / 4., 1.23));
-        fov = 60. + t;
+        fov = 80.;
     }
     else TL(116.) {
         float dice = hash11(floor(beat / 8. + 2.) * 123.);
