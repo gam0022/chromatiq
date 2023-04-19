@@ -26,9 +26,6 @@ vec3 boxPos;
 float prevEndTime = 0., t = 0.;
 #define TL(end) if (t = beat - prevEndTime, beat < (prevEndTime = end))
 
-// 時間の区切り
-#define END_A 48.
-
 // https://www.shadertoy.com/view/3tX3R4
 float remap(float val, float im, float ix, float om, float ox) { return clamp(om + (val - im) * (ox - om) / (ix - im), om, ox); }
 float remap01(float val, float im, float ix) { return saturate((val - im) / (ix - im)); }
@@ -87,7 +84,7 @@ vec4 map(vec3 pos) {
     boxPos = vec3(0);
 
     TL(22.) boxPos.y = -12.;
-    else TL(END_A) boxPos.y = mix(-12., 0., saturate(t / (END_A - 24.)));
+    else TL(48.) boxPos.y = mix(-12., 0., saturate(t / (48. - 24.)));
 
     float boxEmi = 1.1 * abs(cos((beatTau - p1.y) / 4.));
     if (mod(beat, 8.) > 4.) boxEmi = 1.1 * saturate(sin(beatTau * 4.));
@@ -146,12 +143,12 @@ vec4 map(vec3 pos) {
 
     opUnion(m, sdBox(p1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
     opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, boxEmi, hue);
-    opUnion(m, sdBox(p1, _IFS_BoxEmissive.yzx), SOL, boxEmi, hue);
+    // opUnion(m, sdBox(p1, _IFS_BoxEmissive.yzx), SOL, boxEmi, hue);
 
     vec4 mp = vec4(2, VOL, 0, 0);
     opUnion(mp, sdBox(pp1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
     opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, boxEmi, hue);
-    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, boxEmi, hue);
+    // opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, boxEmi, hue);
 
     m = mix(mp, m, fract(_IFS_Iteration));
 
@@ -170,17 +167,20 @@ vec4 map(vec3 pos) {
     if (mod(beat, 2.) < 1. && beat < 48.) emi = 1. - emi;
     opUnion(m, sdBox(p2 - vec3(0, 0, D + a), vec3(W, H, a)), SOL, roughness + emi, 10.0);
 
-    // left right wall
+    // wall
     float id = floor((pos.z + D) / 4.);
-    emi = step(1., mod(id, 2.));
 
-    TL(18.) emi *= step(id, mod(beat * 4., 16.));
-    TL(28.) emi *= 1.;
-    else TL(200.0) emi *= step(id, mod(beat * 4., 16.));
-
-    emi = mix(emi, step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.))), saturate(beat - 120. - pos.y));
-
-    TL(150.) hue = 10.;
+    TL(18.) { emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.)); }
+    else TL(28.) {
+        emi = step(1., mod(id, 2.));
+    }
+    else TL(130.0) {
+        emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
+        emi = mix(emi, step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.))), saturate(beat - 120. - pos.y));
+    }
+    else TL(150.) {
+        hue = 10.;
+    }
     else TL(170.) {
         emi = hash12(floor(pos.yz) + 123.23 * floor(beat * 2.));
         hue = 3.65;
