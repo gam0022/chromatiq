@@ -270,15 +270,20 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         target = vec3(0., -5., -0.);
         fov = 93.;
     }
-    else TL(40.) {
+    else TL(44.) {
         ro = vec3(0., 1., -12.3);
         target = boxPos;
         fov = 100. - t;
     }
-    else TL(56.) {
-        ro = vec3(7. * cos(beatTau / 128.), 1., 7. * sin(beatTau / 128.));
+    else TL(60.) {
+        ro = vec3(0., 1., -12.3);
         target = boxPos;
-        fov = 80.;
+        fov = 70. - t;
+    }
+    else TL(70.) {
+        ro = vec3(8. * cos(beatTau / 128.), 1., 8. * sin(beatTau / 128.));
+        target = boxPos;
+        fov = 70.;
     }
     else TL(116.) {
         float dice = hash11(floor(beat / 8. + 2.) * 123.);
