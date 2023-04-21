@@ -193,19 +193,20 @@ vec3 normal(vec3 p) {
 // https://www.shadertoy.com/view/Xt3cWS
 void madtracer(vec3 ro1, vec3 rd1, float seed) {
     scol = vec3(0);
-    float t = seed * .5, t2 = seed;
+    vec2 rand = hash23(vec3(seed, iTime, iTime));
+    float t = rand.x, t2 = rand.y;
     vec4 m1, m2;
     vec3 rd2, ro2, nor2;
     for (int i = 0; i < 160; i++) {
         m1 = map(ro1 + rd1 * t);
         // t += m1.y == VOL ? 0.25 * abs(m1.x) + 0.0008 : 0.25 * m1.x;
-        t += 0.25 * mix(abs(m1.x) + 0.0032, m1.x, m1.y);
+        t += min(0.5 * mix(abs(m1.x) + 0.0032, m1.x, m1.y), 0.5);
         ro2 = ro1 + rd1 * t;
         nor2 = normal(ro2);
         rd2 = mix(reflect(rd1, nor2), hashHs(nor2, vec3(seed, i, iTime)), saturate(m1.z));
         m2 = map(ro2 + rd2 * t2);
         // t2 += m2.y == VOL ? 0.25 * abs(m2.x) : 0.25 * m2.x;
-        t2 += 0.25 * mix(abs(m2.x), m2.x, m2.y);
+        t2 += min(0.5 * mix(abs(m2.x), m2.x, m2.y), 0.5);
         scol += .007 * (pal(m2) * step(1., m2.z) + pal(m1) * step(1., m1.z));
 
         // force disable unroll for WebGL 1.0
