@@ -240,7 +240,7 @@ vec4 map(vec3 pos, bool isFull) {
         hue = 10.;
 
         TL(18.) { emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.)); }
-        else TL(28.) {
+        else TL(32.) {
             emi = step(1., mod(id, 2.));
         }
         else TL(130.0) {
@@ -264,9 +264,13 @@ vec4 map(vec3 pos, bool isFull) {
         else TL(250.) {
             emi = step(3., mod(floor((pos.z + D) / 2.), 4.)) * step(1., mod(floor(pos.y - pos.z - 4. * beatPhase), 2.));
         }
-        else TL(296.) {
+        else TL(297.) {
             hue = 0.;
-            emi = pow(warning(pos.zy / 2.), 0.6) * mix(1., saturate(sin(t * 15. * TAU)), smoothstep(294., 296., beat));
+            float fade1 = smoothstep(250., 256., beat);
+            float fade2 = smoothstep(292., 297., beat);
+            float pw = mix(10., 0.6, fade1);
+            pw = mix(pw, 0.7, fade2);
+            emi = pow(warning(pos.zy / 2.), pw) * mix(1., step(0., sin(t * 15. * TAU)), fade1 * fade2);
             emi = step(0.5, emi) * emi * 1.05;
         }
         else TL(320.) {
@@ -335,6 +339,10 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
 
     vec2 uv = fragCoord.xy / iResolution.xy;
 
+    boxPos = vec3(0);
+    boxPos.y = mix(-12., 0., smoothstep(20., 48., beat));
+    boxPos.y = mix(boxPos.y, -12., smoothstep(304., 320., beat));
+
     // Camera
     vec2 noise = hash23(vec3(iTime, fragCoord)) - 0.5;  // AA
     vec2 uv2 = (2. * (fragCoord.xy + noise) - iResolution.xy) / iResolution.x;
@@ -352,12 +360,12 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     // Timeline
     TL(8.) {
         ro = vec3(0, -1.36, -12.3 + t * .3);
-        target = vec3(0.0, -2.19, 0.0);
+        target = vec3(0.0, -2.2, 0.0);
         fov = 100.;
     }
     else TL(16.) {
         ro = vec3(9.5, -1.36, -12.3 + t * .3);
-        target = vec3(0.0, -2.19, 0.0);
+        target = vec3(0.0, -2.2, 0.0);
         fov = 100.;
     }
     else TL(20.) {
@@ -365,29 +373,26 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         target = vec3(0., -8., -0.);
         fov = 100.0 + t;
     }
-    else TL(28.) {
+    else TL(32.) {
         ro = vec3(5.5, -5, -1.2);
         target = vec3(0., -8., -0.);
         fov = 60.0 + t;
     }
     else TL(38.) {
         ro = vec3(10.8, -4.2, -7.2 + t * .1);
-        target = vec3(0., -5., -0.);
         fov = 93.;
     }
     else TL(44.) {
         ro = vec3(0., 1., -12.3);
-        target = boxPos;
+        target = vec3(0);
         fov = 100. - t;
     }
     else TL(60.) {
         ro = vec3(0., 1., -12.3);
-        target = boxPos;
         fov = 70. - t;
     }
     else TL(70.) {
         ro = vec3(8. * cos(beatTau / 128.), 1., 8. * sin(beatTau / 128.));
-        target = boxPos;
         fov = 70.;
     }
     else TL(116.) {
@@ -406,14 +411,14 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     }
     else TL(248.) {
     }
-    else TL(252.) {
+    else TL(256.) {
         ro = vec3(-5., 1.0, 18.0);
         target = vec3(5.0, -1.0, 16.0);
         fov = 100. - t;
     }
-    else TL(294.) {
+    else TL(292.) {
     }
-    else TL(298.) {
+    else TL(300.) {
         ro = vec3(-5., 1.0, 18.0);
         target = vec3(5.0, -1.0, 16.0);
         fov = 100. - t;
@@ -426,10 +431,6 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     }
 
     ro += 0.1 * fbm(vec2(beat / 4., 1.23));
-
-    boxPos = vec3(0);
-    boxPos.y = mix(-12., 0., smoothstep(22., 48., beat));
-    boxPos.y = mix(boxPos.y, -12., smoothstep(304., 320., beat));
 
     vec3 up = vec3(0, 1, 0);
     vec3 fwd = normalize(target - ro);
