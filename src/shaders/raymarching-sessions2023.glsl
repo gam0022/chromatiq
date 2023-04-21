@@ -12,7 +12,7 @@ uniform float gCameraDebug;    // 0 0 1
 #define opRepLim(p, c, l) p = p - c * clamp(floor(p / c + .5), -l, l);
 
 #define tri(x) (1. - 4. * abs(fract(x) - .5))
-#define phase(x) (floor(x) + .5 + .5 * cos(PI * exp(-5.0 * fract(x))))
+#define phase(x) (floor(x) + .5 + .5 * cos(TAU * .5 * exp(-5. * fract(x))))
 void rot(inout vec2 p, float a) { p *= mat2(cos(a), sin(a), -sin(a), cos(a)); }
 
 vec3 ro, target;
@@ -49,7 +49,7 @@ float sdBox(vec3 p, vec3 b) {
     return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
-float sdBox(in vec2 p, in vec2 b) {
+float sdBox(vec2 p, vec2 b) {
     vec2 d = abs(p) - b;
     return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
 }
@@ -96,8 +96,9 @@ float warning(vec2 p) {
         float ss = smoothstep(1.0, 1.05, mod(p.x * 10. + 10. * p.y + 8. * ph, 2.));
         mark = saturate(step(0., d) + ss);
     } else {
-        vec4[] param_array = vec4[](vec4(140., 72., 0., 0.), vec4(0., 184., 482, 0.), vec4(0., 0., 753., 0.), vec4(541., 156., 453., 0.), vec4(112., 0., 301., 0.), vec4(311., 172., 50., 0.),
-                                    vec4(249., 40., 492., 0.), vec4(0.), vec4(1.));
+        vec4[] param_array = vec4[](vec4(140., 72., 0., 0.), vec4(0., 184., 482, 0.), vec4(0., 0., 753., 0.), vec4(541., 156., 453., 0.), vec4(112., 0., 301., 0.),  // 0-3
+                                    vec4(311., 172., 50., 0.), vec4(249., 40., 492., 0.), vec4(0.), vec4(1.));                                                       // 4-7
+
         vec4 param = param_array[int(mod(dice * 33.01, 8.))] / vec2(1200., 675.).xyxy;
         // param = PU;
         vec2 p1 = p - param.xy;
@@ -132,11 +133,11 @@ vec4 map(vec3 pos) {
 
     TL(22.) boxPos.y = -12.;
     else TL(48.) boxPos.y = mix(-12., 0., saturate(t / (48. - 24.)));
+    else TL(320.) boxPos.y = mix(0., -12., smoothstep(304., 320., beat));
 
     float boxEmi;
 
-    if (mod(beat, 8.) > 4.)
-    {
+    if (mod(beat, 8.) > 4.) {
         boxEmi = 1.1 * saturate(sin(beatTau * 4.));
     } else {
         boxEmi = 1.1 * abs(cos((beatTau - p1.y) / 4.));
@@ -148,6 +149,7 @@ vec4 map(vec3 pos) {
     vec4 _IFS_BoxBase = vec4(1, 1, 1, 0);
     vec4 _IFS_BoxEmissive = vec4(0.05, 1.05, 1.05, 0);
     float hue = 0.5;
+    bool emi2 = false;
 
     TL(40.) {
         _IFS_Rot *= 0.;
@@ -159,21 +161,47 @@ vec4 map(vec3 pos) {
         _IFS_Iteration = 1. + a;
         _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.) * a;
     }
-    else TL(96.) {
+    else TL(84.) {
+        // default
     }
     else TL(100.) {
-        boxEmi = 1.1 * abs(cos((2. * beatTau - p1.y) / 4.));
+        emi2 = true;
     }
     else TL(120.) {
-        _IFS_Iteration = phase(tri(beat / 16.) + 3.);
-        _IFS_Offset = vec4(1.36 * fract(beatPhase), 0.06, 0.69, 1.);
-        hue = fract(beat + length(p1));
+        emi2 = true;
+        hue = fract(.12 * beatPhase);
     }
-    else TL(180.) {
-        _IFS_Iteration = phase(tri(beat / 16.) + 3.);
-        _IFS_Offset = vec4(1.36 * fract(beatPhase), 0.06, 0.69, 1.);
-        _IFS_Rot = vec4(0.34 + phase(beat) / 2.3, -0.28, 1.23, 0.);
-        boxEmi = 1.1 * abs(cos((2. * beatTau - p1.y) / 4.));
+    else TL(160.) {
+        emi2 = true;
+        hue = fract(beatPhase * .1 + pos.z) + 3.;
+    }
+    else TL(200.) {
+        emi2 = false;
+        hue = fract(.12 * beatPhase);
+    }
+    else TL(250.) {
+        emi2 = true;
+        hue = fract(.12 * beatPhase);
+    }
+    else TL(264.) {
+        hue = 0.;
+    }
+    else TL(288.) {
+        emi2 = true;
+        hue = 0.;
+        _IFS_Iteration = 3. + phase(min(t / 4., 2.));
+        _IFS_Rot = vec4(0.3 + 0.1 * sin(beatPhase * TAU / 8.), 0.9 + 0.1 * sin(beatPhase * TAU / 8.), 0.4, 0.);
+        _IFS_Offset = vec4(1.4, 0.66, 1.2, 1.);
+    }
+    else TL(304.) {
+        emi2 = (beat < 296.);
+        _IFS_Iteration = 4. - phase(min(t / 8., 2.));
+    }
+    else TL(320.) {
+        float a = phase(saturate(t / 8.));
+        _IFS_Iteration = 2. - a;
+        _IFS_Rot *= (1. - a);
+        _IFS_Offset *= (1. - a);
     }
 
     p1 -= (boxPos + _IFS_Offset.xyz);
@@ -181,7 +209,7 @@ vec4 map(vec3 pos) {
     vec3 pp1 = p1;
 
     for (int i = 0; i < int(_IFS_Iteration); i++) {
-        pp1 = p1 + +_IFS_Offset.xyz;
+        pp1 = p1 + _IFS_Offset.xyz;
         p1 = abs(p1 + _IFS_Offset.xyz) - _IFS_Offset.xyz;
         rot(p1.xz, TAU * _IFS_Rot.x);
         rot(p1.zy, TAU * _IFS_Rot.y);
@@ -191,10 +219,10 @@ vec4 map(vec3 pos) {
     vec4 mp = m;
     opUnion(m, sdBox(p1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
     opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, roughness + boxEmi, hue);
-    // opUnion(m, sdBox(p1, _IFS_BoxEmissive.yzx), SOL, boxEmi, hue);
+    if (emi2) opUnion(m, sdBox(p1, _IFS_BoxEmissive.yzx), SOL, roughness + boxEmi, hue + 0.5);
     opUnion(mp, sdBox(pp1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
     opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, roughness + boxEmi, hue);
-    // opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, boxEmi, hue);
+    if (emi2) opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, roughness + boxEmi, hue + 0.5);
 
     m = mix(mp, m, fract(_IFS_Iteration));
 
@@ -207,7 +235,7 @@ vec4 map(vec3 pos) {
 
     // door
     float emi = step(p2.x, 2.) * step(p2.y, 2.);
-    if (mod(beat, 2.) < 1. && beat < 48.) emi = 1. - emi;
+    if (mod(beat, 2.) < 1. && (beat < 48. || beat > 300.)) emi = 1. - emi;
     opUnion(m, sdBox(p2 - vec3(0, 0, D + a), vec3(W, H, a)), SOL, roughness + emi, 10.0);
 
     // wall
@@ -230,15 +258,21 @@ vec4 map(vec3 pos) {
         hue = 3.65;
     }
     else TL(200.) {
-        emi = hash12(floor(pos.yz) + 123.23 * floor(beat * 2.));
+        emi = hash12(floor(pos.yz * mix(1., 16., smoothstep(198., 200., beat))) + 123.23 * floor(beat * 2.));
+        emi = mix(emi, step(.0, emi) * step(3., mod(floor((pos.z + D) / 2.), 4.)), smoothstep(198., 200., beat));
+
         hue = hash12(floor(pos.yz) + 123.23 * floor(beat * 8.));
+        hue = mix(hue, 10., smoothstep(196., 200., beat));
     }
     else TL(250.) {
         emi = step(3., mod(floor((pos.z + D) / 2.), 4.)) * step(1., mod(floor(pos.y - pos.z - 4. * beatPhase), 2.));
     }
-    else {
+    else TL(296.) {
         hue = 0.;
-        emi = pow(warning(pos.zy / 2.), 0.6) * 1.5;
+        emi = pow(warning(pos.zy / 2.), 0.6) * 1.5 * mix(1., saturate(sin(t * 15. * TAU)), exp(-(296. - beat)));
+    }
+    else TL(320.) {
+        emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
     }
 
     opUnion(m, sdBox(p2 - vec3(W + a, 0, 0), vec3(a, H, D)), SOL, roughness + emi, hue);
@@ -255,20 +289,20 @@ vec3 normal(vec3 p) {
 // https://www.shadertoy.com/view/Xt3cWS
 void madtracer(vec3 ro1, vec3 rd1, float seed) {
     scol = vec3(0);
-    vec2 rand = hash23(vec3(seed, iTime, iTime));
+    vec2 rand = hash23(vec3(seed, iTime, iTime)) * .5;
     float t = rand.x, t2 = rand.y;
     vec4 m1, m2;
     vec3 rd2, ro2, nor2;
     for (int i = 0; i < 160; i++) {
         m1 = map(ro1 + rd1 * t);
         // t += m1.y == VOL ? 0.25 * abs(m1.x) + 0.0008 : 0.25 * m1.x;
-        t += 0.3 * mix(abs(m1.x) + 0.0032, m1.x, m1.y);
+        t += 0.25 * mix(abs(m1.x) + 0.0032, m1.x, m1.y);
         ro2 = ro1 + rd1 * t;
         nor2 = normal(ro2);
         rd2 = mix(reflect(rd1, nor2), hashHs(nor2, vec3(seed, i, iTime)), saturate(m1.z));
         m2 = map(ro2 + rd2 * t2);
         // t2 += m2.y == VOL ? 0.25 * abs(m2.x) : 0.25 * m2.x;
-        t2 += 0.3 * mix(abs(m2.x), m2.x, m2.y);
+        t2 += 0.25 * mix(abs(m2.x), m2.x, m2.y);
         scol += .007 * (pal(m2) * step(1., m2.z) + pal(m1) * step(1., m1.z));
 
         // force disable unroll for WebGL 1.0
@@ -295,7 +329,7 @@ void raymarching(vec3 ro1, vec3 rd1) {
     }
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+void mainImage(out vec4 fragColor, vec2 fragCoord) {
     beat = iTime * BPM / 60.0;
     beatTau = beat * TAU;
     beatPhase = phase(beat / 2.);
@@ -305,6 +339,16 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // Camera
     vec2 noise = hash23(vec3(iTime, fragCoord)) - 0.5;  // AA
     vec2 uv2 = (2. * (fragCoord.xy + noise) - iResolution.xy) / iResolution.x;
+
+    // 通常時カメラ
+    float dice = hash11(floor(beat / 8. + 2.) * 123.);
+    if (dice < 0.8)
+        ro = vec3(8. * cos(beatTau / 128.), mix(-6., 6., dice), 8. * sin(beatTau / 128.));
+    else
+        ro = vec3(9.5 - dice * 20., 1., -12.3);
+
+    target = boxPos;
+    fov = 120.;
 
     // Timeline
     TL(8.) {
@@ -348,29 +392,38 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         fov = 70.;
     }
     else TL(116.) {
-        float dice = hash11(floor(beat / 8. + 2.) * 123.);
-        if (dice < 0.8)
-            ro = vec3(8. * cos(beatTau / 128.), mix(-6., 6., dice), 8. * sin(beatTau / 128.));
-        else
-            ro = vec3(9.5 - dice * 20., 1., -12.3);
-
-        target = boxPos;
-        fov = 120.;
     }
     else TL(122.) {
         ro = vec3(-5., 1.0, 18.0);
         target = vec3(5.0, -1.0, 16.0);
         fov = 100. - t;
     }
-    else {
-        float dice = hash11(floor(beat / 8. + 2.) * 123.);
-        if (dice < 0.8)
-            ro = vec3(8. * cos(beatTau / 128.), mix(-6., 6., dice), 8. * sin(beatTau / 128.));
-        else
-            ro = vec3(9.5 - dice * 20., 1., -12.3);
-
-        target = boxPos;
-        fov = 120.;
+    else TL(196.) {
+    }
+    else TL(202.) {
+        ro = vec3(-5., 1.0, 18.0);
+        target = vec3(5.0, -1.0, 16.0);
+        fov = 100. - t;
+    }
+    else TL(248.) {
+    }
+    else TL(252.) {
+        ro = vec3(-5., 1.0, 18.0);
+        target = vec3(5.0, -1.0, 16.0);
+        fov = 100. - t;
+    }
+    else TL(294.) {
+    }
+    else TL(298.) {
+        ro = vec3(-5., 1.0, 18.0);
+        target = vec3(5.0, -1.0, 16.0);
+        fov = 100. - t;
+    }
+    else TL(304.) {
+    }
+    else TL(320.) {
+        ro = vec3(0., 1., -12.3);
+        fov = 90. + t;
     }
 
     ro += 0.1 * fbm(vec2(beat / 4., 1.23));
@@ -396,7 +449,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec3 bufa = texture(iChannel0, uv).xyz;
 
     // fade out
-    // scol = mix(scol, vec3(0), remap01(beat, 4. * 70., 4. * 72.));
+    scol = mix(scol, vec3(0), smoothstep(316., 320., beat));
     fragColor = saturate(vec4(0.7 * scol + 0.7 * bufa, 1.));
 #endif
 }

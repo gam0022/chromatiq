@@ -60,7 +60,7 @@ vec3 invert(vec3 c, vec2 uv) {
 }
 
 vec3 flash(vec3 c) {
-    c = mix(c, vec3(1.0), gFlash * saturate(cos(iTime * PI * gFlashSpeed)));
+    c = mix(c, vec3(1.0), gFlash * saturate(cos(iTime * PI * .5 * gFlashSpeed)));
     return c;
 }
 

@@ -1,4 +1,4 @@
-import { chromatiq, animateUniforms } from "./index.common";
+import { chromatiq, animateUniforms, bpm } from "./index.common";
 
 import GUI from 'lil-gui';
 import { saveAs } from "file-saver";
@@ -23,7 +23,7 @@ window.addEventListener(
       debugDisableReset: false,
       resolution: "1920x1080",
       timeMode: "beat",
-      bpm: 128,
+      bpm: bpm,
     };
 
     // HTMLElements
@@ -394,7 +394,8 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
 
       const guiClosedStr = sessionStorage.getItem("guiClosed");
       if (guiClosedStr) {
-        gui._closed = parseBool(guiClosedStr);
+        // gui.open(parseBool(guiClosedStr));
+        gui.close();
       }
 
       for (const [key] of Object.entries(chromatiq.uniforms)) {
