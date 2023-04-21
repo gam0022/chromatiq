@@ -428,9 +428,8 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     ro += 0.1 * fbm(vec2(beat / 4., 1.23));
 
     boxPos = vec3(0);
-    TL(22.) boxPos.y = -12.;
-    else TL(48.) boxPos.y = mix(-12., 0., smoothstep(22., 48., beat));
-    else TL(320.) boxPos.y = mix(0., -12., smoothstep(304., 320., beat));
+    boxPos.y = mix(-12., 0., smoothstep(22., 48., beat));
+    boxPos.y = mix(boxPos.y, -12., smoothstep(304., 320., beat));
 
     vec3 up = vec3(0, 1, 0);
     vec3 fwd = normalize(target - ro);
