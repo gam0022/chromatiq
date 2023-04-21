@@ -151,23 +151,23 @@ vec4 map(vec3 pos, bool isFull) {
         _IFS_Iteration = 1.;
     }
     else TL(48.) {
-        float a = saturate(phase((beat - 48.) / 4.));
-        _IFS_Iteration = 1. + a;
-        _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.) * a;
+        float fade = saturate(phase((beat - 48.) / 4.));
+        _IFS_Iteration = 1. + fade;
+        _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.) * fade;
     }
     else TL(84.) {
-        // default
     }
-    else TL(100.) {
+    else TL(96.) {
         emi2 = true;
     }
-    else TL(120.) {
+    else TL(128.) {
         emi2 = true;
-        hue = fract(.12 * beatPhase);
+        hue = fract(0.12 * beatPhase);
     }
     else TL(160.) {
         emi2 = true;
-        hue = fract(beatPhase * .1 + pos.z) + 3.;
+        hue = fract(beatPhase * .1 + pos.z) + 1.;
+        boxEmi *= 1.7;
     }
     else TL(200.) {
         emi2 = false;
@@ -234,8 +234,7 @@ vec4 map(vec3 pos, bool isFull) {
     opUnion(m, sdBox(p2 - vec3(0, 0, D + a), vec3(W, H, a)), SOL, roughness + emi * 2., 10.0);
 
     // wall
-    if (isFull)
-    {
+    if (isFull) {
         float id = floor((pos.z + D) / 4.);
         hue = 10.;
 
@@ -243,11 +242,11 @@ vec4 map(vec3 pos, bool isFull) {
         else TL(32.) {
             emi = step(1., mod(id, 2.));
         }
-        else TL(130.0) {
+        else TL(126.0) {
             emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
-            emi = mix(emi, step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.))), saturate(beat - 120. - pos.y));
+            emi = mix(emi, step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.))), saturate(beat - 110. - pos.y));
         }
-        else TL(150.) {
+        else TL(152.) {
             emi = step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.)));
         }
         else TL(170.) {
@@ -395,12 +394,18 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         ro = vec3(8. * cos(beatTau / 128.), 1., 8. * sin(beatTau / 128.));
         fov = 70.;
     }
-    else TL(116.) {
+    else TL(104.) {
     }
-    else TL(122.) {
+    else TL(112.) {
         ro = vec3(-5., 1.0, 18.0);
         target = vec3(5.0, -1.0, 16.0);
         fov = 100. - t;
+    }
+    else TL(124.) {
+    }
+    else TL(130.) {
+        ro = vec3(0., 1., -12.3);
+        fov = 70. - t;
     }
     else TL(196.) {
     }
