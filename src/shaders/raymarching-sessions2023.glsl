@@ -129,12 +129,6 @@ vec4 map(vec3 pos, bool isFull) {
 
     vec3 p1 = pos;
 
-    boxPos = vec3(0);
-
-    TL(22.) boxPos.y = -12.;
-    else TL(48.) boxPos.y = mix(-12., 0., saturate(t / (48. - 24.)));
-    else TL(320.) boxPos.y = mix(0., -12., smoothstep(304., 320., beat));
-
     float boxEmi;
 
     if (mod(beat, 8.) > 4.) {
@@ -432,6 +426,11 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     }
 
     ro += 0.1 * fbm(vec2(beat / 4., 1.23));
+
+    boxPos = vec3(0);
+    TL(22.) boxPos.y = -12.;
+    else TL(48.) boxPos.y = mix(-12., 0., smoothstep(22., 48., beat));
+    else TL(320.) boxPos.y = mix(0., -12., smoothstep(304., 320., beat));
 
     vec3 up = vec3(0, 1, 0);
     vec3 fwd = normalize(target - ro);
