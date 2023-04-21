@@ -114,7 +114,7 @@ float warning(vec2 p) {
     return hex * mark;
 }
 
-vec4 map(vec3 pos) {
+vec4 map(vec3 pos, bool isFull) {
     vec4 m = vec4(2, VOL, 0, 0);
     // x: Distance
     // y: MaterialType (VOL or SOL)
@@ -239,40 +239,43 @@ vec4 map(vec3 pos) {
     opUnion(m, sdBox(p2 - vec3(0, 0, D + a), vec3(W, H, a)), SOL, roughness + emi, 10.0);
 
     // wall
-    float id = floor((pos.z + D) / 4.);
-    hue = 10.;
+    if (isFull)
+    {
+        float id = floor((pos.z + D) / 4.);
+        hue = 10.;
 
-    TL(18.) { emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.)); }
-    else TL(28.) {
-        emi = step(1., mod(id, 2.));
-    }
-    else TL(130.0) {
-        emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
-        emi = mix(emi, step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.))), saturate(beat - 120. - pos.y));
-    }
-    else TL(150.) {
-        emi = step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.)));
-    }
-    else TL(170.) {
-        emi = hash12(floor(pos.yz) + 123.23 * floor(beat * 2.));
-        hue = 3.65;
-    }
-    else TL(200.) {
-        emi = hash12(floor(pos.yz * mix(1., 16., smoothstep(198., 200., beat))) + 123.23 * floor(beat * 2.));
-        emi = mix(emi, step(.0, emi) * step(3., mod(floor((pos.z + D) / 2.), 4.)), smoothstep(198., 200., beat));
+        TL(18.) { emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.)); }
+        else TL(28.) {
+            emi = step(1., mod(id, 2.));
+        }
+        else TL(130.0) {
+            emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
+            emi = mix(emi, step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.))), saturate(beat - 120. - pos.y));
+        }
+        else TL(150.) {
+            emi = step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.)));
+        }
+        else TL(170.) {
+            emi = hash12(floor(pos.yz) + 123.23 * floor(beat * 2.));
+            hue = 3.65;
+        }
+        else TL(200.) {
+            emi = hash12(floor(pos.yz * mix(1., 16., smoothstep(198., 200., beat))) + 123.23 * floor(beat * 2.));
+            emi = mix(emi, step(.0, emi) * step(3., mod(floor((pos.z + D) / 2.), 4.)), smoothstep(198., 200., beat));
 
-        hue = hash12(floor(pos.yz) + 123.23 * floor(beat * 8.));
-        hue = mix(hue, 10., smoothstep(196., 200., beat));
-    }
-    else TL(250.) {
-        emi = step(3., mod(floor((pos.z + D) / 2.), 4.)) * step(1., mod(floor(pos.y - pos.z - 4. * beatPhase), 2.));
-    }
-    else TL(296.) {
-        hue = 0.;
-        emi = pow(warning(pos.zy / 2.), 0.6) * 1.5 * mix(1., saturate(sin(t * 15. * TAU)), exp(-(296. - beat)));
-    }
-    else TL(320.) {
-        emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
+            hue = hash12(floor(pos.yz) + 123.23 * floor(beat * 8.));
+            hue = mix(hue, 10., smoothstep(196., 200., beat));
+        }
+        else TL(250.) {
+            emi = step(3., mod(floor((pos.z + D) / 2.), 4.)) * step(1., mod(floor(pos.y - pos.z - 4. * beatPhase), 2.));
+        }
+        else TL(296.) {
+            hue = 0.;
+            emi = pow(warning(pos.zy / 2.), 0.6) * 1.5 * mix(1., saturate(sin(t * 15. * TAU)), exp(-(296. - beat)));
+        }
+        else TL(320.) {
+            emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
+        }
     }
 
     opUnion(m, sdBox(p2 - vec3(W + a, 0, 0), vec3(a, H, D)), SOL, roughness + emi, hue);
@@ -282,7 +285,7 @@ vec4 map(vec3 pos) {
 
 vec3 normal(vec3 p) {
     vec2 e = vec2(0, .05);
-    return normalize(map(p).x - vec3(map(p - e.yxx).x, map(p - e.xyx).x, map(p - e.xxy).x));
+    return normalize(map(p, false).x - vec3(map(p - e.yxx, false).x, map(p - e.xyx, false).x, map(p - e.xxy, false).x));
 }
 
 // Ref. EOT - Grid scene by Virgill
@@ -294,13 +297,13 @@ void madtracer(vec3 ro1, vec3 rd1, float seed) {
     vec4 m1, m2;
     vec3 rd2, ro2, nor2;
     for (int i = 0; i < 160; i++) {
-        m1 = map(ro1 + rd1 * t);
+        m1 = map(ro1 + rd1 * t, true);
         // t += m1.y == VOL ? 0.25 * abs(m1.x) + 0.0008 : 0.25 * m1.x;
         t += 0.25 * mix(abs(m1.x) + 0.0032, m1.x, m1.y);
         ro2 = ro1 + rd1 * t;
         nor2 = normal(ro2);
         rd2 = mix(reflect(rd1, nor2), hashHs(nor2, vec3(seed, i, iTime)), saturate(m1.z));
-        m2 = map(ro2 + rd2 * t2);
+        m2 = map(ro2 + rd2 * t2, true);
         // t2 += m2.y == VOL ? 0.25 * abs(m2.x) : 0.25 * m2.x;
         t2 += 0.25 * mix(abs(m2.x), m2.x, m2.y);
         scol += .007 * (pal(m2) * step(1., m2.z) + pal(m1) * step(1., m1.z));
@@ -316,7 +319,7 @@ void raymarching(vec3 ro1, vec3 rd1) {
     vec4 m;
     for (int i = 0; i < 160; i++) {
         vec3 p = ro1 + rd1 * t;
-        m = map(p);
+        m = map(p, true);
         t += m.x;
 
         if (m.x < 0.01) {
@@ -427,12 +430,6 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     }
 
     ro += 0.1 * fbm(vec2(beat / 4., 1.23));
-
-    if (gCameraDebug > 0.) {
-        ro = vec3(gCameraEyeX, gCameraEyeY, gCameraEyeZ);
-        target = vec3(gCameraTargetX, gCameraTargetY, gCameraTargetZ);
-        fov = gCameraFov;
-    }
 
     vec3 up = vec3(0, 1, 0);
     vec3 fwd = normalize(target - ro);
