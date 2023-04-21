@@ -41,7 +41,7 @@ vec3 pal(vec4 m) {
     // Integer part: Blend ratio with white (0-10)
     // Decimal part: Hue (0-1)
     vec3 col = vec3(0.5) + 0.5 * cos(TAU * (vec3(0.0, 0.33, 0.67) + m.w));
-    return mix(col, vec3(1), 0.1 * floor(m.w));
+    return mix(col, vec3(.5), 0.1 * floor(m.w));
 }
 
 float sdBox(vec3 p, vec3 b) {
@@ -111,7 +111,7 @@ float warning(vec2 p) {
         mark = saturate(smoothstep(0., 0.01, d));
     }
 
-    return hex * mark;
+    return saturate(hex * mark);
 }
 
 vec4 map(vec3 pos, bool isFull) {
@@ -125,7 +125,7 @@ vec4 map(vec3 pos, bool isFull) {
     float a = .1;
     float W = 16.;
     float H = 8.;
-    float D = 32.;
+    float D = 30.;
 
     vec3 p1 = pos;
 
@@ -138,9 +138,9 @@ vec4 map(vec3 pos, bool isFull) {
     float boxEmi;
 
     if (mod(beat, 8.) > 4.) {
-        boxEmi = 1.1 * saturate(sin(beatTau * 4.));
+        boxEmi = 2.2 * saturate(sin(beatTau * 4.));
     } else {
-        boxEmi = 1.1 * abs(cos((beatTau - p1.y) / 4.));
+        boxEmi = 2.2 * abs(cos((beatTau - p1.y) / 4.));
     }
 
     vec4 _IFS_Rot = vec4(0.34 + beatPhase / 2.3, -0.28, 1.03, 0.);
@@ -192,6 +192,7 @@ vec4 map(vec3 pos, bool isFull) {
         _IFS_Iteration = 3. + phase(min(t / 4., 2.));
         _IFS_Rot = vec4(0.3 + 0.1 * sin(beatPhase * TAU / 8.), 0.9 + 0.1 * sin(beatPhase * TAU / 8.), 0.4, 0.);
         _IFS_Offset = vec4(1.4, 0.66, 1.2, 1.);
+        boxEmi *= .7;
     }
     else TL(304.) {
         emi2 = (beat < 296.);
@@ -236,7 +237,7 @@ vec4 map(vec3 pos, bool isFull) {
     // door
     float emi = step(p2.x, 2.) * step(p2.y, 2.);
     if (mod(beat, 2.) < 1. && (beat < 48. || beat > 300.)) emi = 1. - emi;
-    opUnion(m, sdBox(p2 - vec3(0, 0, D + a), vec3(W, H, a)), SOL, roughness + emi, 10.0);
+    opUnion(m, sdBox(p2 - vec3(0, 0, D + a), vec3(W, H, a)), SOL, roughness + emi * 2., 10.0);
 
     // wall
     if (isFull)
@@ -256,11 +257,11 @@ vec4 map(vec3 pos, bool isFull) {
             emi = step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.)));
         }
         else TL(170.) {
-            emi = hash12(floor(pos.yz) + 123.23 * floor(beat * 2.));
+            emi = pow(hash12(floor(pos.yz) + 123.23 * floor(beat * 2.)), 4.);
             hue = 3.65;
         }
         else TL(200.) {
-            emi = hash12(floor(pos.yz * mix(1., 16., smoothstep(198., 200., beat))) + 123.23 * floor(beat * 2.));
+            emi = pow(hash12(floor(pos.yz * mix(1., 16., smoothstep(198., 200., beat))) + 123.23 * floor(beat * 2.)), 4.);
             emi = mix(emi, step(.0, emi) * step(3., mod(floor((pos.z + D) / 2.), 4.)), smoothstep(198., 200., beat));
 
             hue = hash12(floor(pos.yz) + 123.23 * floor(beat * 8.));
@@ -271,14 +272,15 @@ vec4 map(vec3 pos, bool isFull) {
         }
         else TL(296.) {
             hue = 0.;
-            emi = pow(warning(pos.zy / 2.), 0.6) * 1.5 * mix(1., saturate(sin(t * 15. * TAU)), exp(-(296. - beat)));
+            emi = pow(warning(pos.zy / 2.), 0.6) * mix(1., saturate(sin(t * 15. * TAU)), smoothstep(294., 296., beat));
+            emi = step(0.5, emi) * emi * 1.05;
         }
         else TL(320.) {
             emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
         }
     }
 
-    opUnion(m, sdBox(p2 - vec3(W + a, 0, 0), vec3(a, H, D)), SOL, roughness + emi, hue);
+    opUnion(m, sdBox(p2 - vec3(W + a, 0, 0), vec3(a, H, D)), SOL, roughness + emi * 2., hue);
 
     return m;
 }
@@ -296,7 +298,7 @@ void madtracer(vec3 ro1, vec3 rd1, float seed) {
     float t = rand.x, t2 = rand.y;
     vec4 m1, m2;
     vec3 rd2, ro2, nor2;
-    for (int i = 0; i < 160; i++) {
+    for (int i = 0; i < 130; i++) {
         m1 = map(ro1 + rd1 * t, true);
         // t += m1.y == VOL ? 0.25 * abs(m1.x) + 0.0008 : 0.25 * m1.x;
         t += 0.25 * mix(abs(m1.x) + 0.0032, m1.x, m1.y);
@@ -305,8 +307,8 @@ void madtracer(vec3 ro1, vec3 rd1, float seed) {
         rd2 = mix(reflect(rd1, nor2), hashHs(nor2, vec3(seed, i, iTime)), saturate(m1.z));
         m2 = map(ro2 + rd2 * t2, true);
         // t2 += m2.y == VOL ? 0.25 * abs(m2.x) : 0.25 * m2.x;
-        t2 += 0.25 * mix(abs(m2.x), m2.x, m2.y);
-        scol += .007 * (pal(m2) * step(1., m2.z) + pal(m1) * step(1., m1.z));
+        t2 += 0.15 * mix(abs(m2.x), m2.x, m2.y);
+        scol += .015 * (pal(m2) * max(0., m2.z - 1.) + pal(m1) * max(0., m1.z - 1.));
 
         // force disable unroll for WebGL 1.0
         if (t < -1.) break;
