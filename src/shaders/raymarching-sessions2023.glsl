@@ -1,13 +1,3 @@
-
-uniform float gCameraEyeX;     // -0.08828528243935951 -100 100 camera
-uniform float gCameraEyeY;     // 3.5309297601209235 -100 100
-uniform float gCameraEyeZ;     // -2.705631420983895 -100 100
-uniform float gCameraTargetX;  // 0.7576763789243015 -100 100
-uniform float gCameraTargetY;  // 3.4515422110479044 -100 100
-uniform float gCameraTargetZ;  // -0.21633410393024527 -100 100
-uniform float gCameraFov;      // 37.88049605411499 0 180
-uniform float gCameraDebug;    // 0 0 1
-
 #define tri(x) (1. - 4. * abs(fract(x) - .5))
 #define phase(x) (floor(x) + .5 + .5 * cos(TAU * .5 * exp(-5. * fract(x))))
 void rot(inout vec2 p, float a) { p *= mat2(cos(a), sin(a), -sin(a), cos(a)); }

@@ -11,6 +11,16 @@ uniform sampler2D iChannel0; // first pass
 uniform sampler2D iPrevPass;
 uniform sampler2D iTextTexture;
 
+
+uniform float gCameraEyeX;     // -0.08828528243935951 -100 100 camera
+uniform float gCameraEyeY;     // 3.5309297601209235 -100 100
+uniform float gCameraEyeZ;     // -2.705631420983895 -100 100
+uniform float gCameraTargetX;  // 0.7576763789243015 -100 100
+uniform float gCameraTargetY;  // 3.4515422110479044 -100 100
+uniform float gCameraTargetZ;  // -0.21633410393024527 -100 100
+uniform float gCameraFov;      // 37.88049605411499 0 180
+uniform float gCameraDebug;    // 0 0 1
+
 void mainImage(out vec4 fragColor, in vec2 fragCoord);
 
 out vec4 outColor;
@@ -33,9 +43,7 @@ void main(void) {
     outColor = c;
 }
 
-// consts
 const float TAU = 6.28318530718;
-
 #define BPM 120.0
 #define saturate(x) clamp(x, 0., 1.)
 
