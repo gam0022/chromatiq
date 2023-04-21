@@ -17,8 +17,7 @@ uniform float gCameraDebug;    // 0 0 1
 vec3 ro, target;
 float fov;
 vec3 scol;
-float beatTau;
-float beatPhase;
+float beat, beatTau, beatPhase;
 vec3 boxPos;
 
 // Timeline
@@ -128,10 +127,10 @@ vec4 map(vec3 pos) {
 
     vec4 mp = m;
     opUnion(m, sdBox(p1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
-    opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, boxEmi, hue);
+    opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, roughness + boxEmi, hue);
     // opUnion(m, sdBox(p1, _IFS_BoxEmissive.yzx), SOL, boxEmi, hue);
     opUnion(mp, sdBox(pp1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
-    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, boxEmi, hue);
+    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, roughness + boxEmi, hue);
     // opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, boxEmi, hue);
 
     m = mix(mp, m, fract(_IFS_Iteration));
@@ -200,13 +199,13 @@ void madtracer(vec3 ro1, vec3 rd1, float seed) {
     for (int i = 0; i < 160; i++) {
         m1 = map(ro1 + rd1 * t);
         // t += m1.y == VOL ? 0.25 * abs(m1.x) + 0.0008 : 0.25 * m1.x;
-        t += min(0.5 * mix(abs(m1.x) + 0.0032, m1.x, m1.y), 0.5);
+        t += 0.3 * mix(abs(m1.x) + 0.0032, m1.x, m1.y);
         ro2 = ro1 + rd1 * t;
         nor2 = normal(ro2);
         rd2 = mix(reflect(rd1, nor2), hashHs(nor2, vec3(seed, i, iTime)), saturate(m1.z));
         m2 = map(ro2 + rd2 * t2);
         // t2 += m2.y == VOL ? 0.25 * abs(m2.x) : 0.25 * m2.x;
-        t2 += min(0.5 * mix(abs(m2.x), m2.x, m2.y), 0.5);
+        t2 += 0.3 * mix(abs(m2.x), m2.x, m2.y);
         scol += .007 * (pal(m2) * step(1., m2.z) + pal(m1) * step(1., m1.z));
 
         // force disable unroll for WebGL 1.0
@@ -234,7 +233,7 @@ void raymarching(vec3 ro1, vec3 rd1) {
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    // beat = iTime * BPM / 60.0;
+    beat = iTime * BPM / 60.0;
     beatTau = beat * TAU;
     beatPhase = phase(beat / 2.);
 
@@ -335,6 +334,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
     // fade out
     // scol = mix(scol, vec3(0), remap01(beat, 4. * 70., 4. * 72.));
-    fragColor = saturate(vec4(0.7 * scol + 0.7 * bufa, 0.));
+    fragColor = saturate(vec4(0.7 * scol + 0.7 * bufa, 1.));
 #endif
 }

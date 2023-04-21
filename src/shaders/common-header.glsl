@@ -39,7 +39,6 @@ const float TAU = 6.28318530718;
 const float PIH = 1.57079632679;
 
 #define BPM 120.0
-#define beat (iTime * BPM / 60.0)
 #define saturate(x) clamp(x, 0., 1.)
 
 // Hash without Sine by David Hoskins.
