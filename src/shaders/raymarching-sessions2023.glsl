@@ -8,9 +8,6 @@ uniform float gCameraTargetZ;  // -0.21633410393024527 -100 100
 uniform float gCameraFov;      // 37.88049605411499 0 180
 uniform float gCameraDebug;    // 0 0 1
 
-#define opRep(p, a) p = mod(p, a) - a * .5
-#define opRepLim(p, c, l) p = p - c * clamp(floor(p / c + .5), -l, l);
-
 #define tri(x) (1. - 4. * abs(fract(x) - .5))
 #define phase(x) (floor(x) + .5 + .5 * cos(TAU * .5 * exp(-5. * fract(x))))
 void rot(inout vec2 p, float a) { p *= mat2(cos(a), sin(a), -sin(a), cos(a)); }
@@ -24,10 +21,6 @@ vec3 boxPos;
 // Timeline
 float prevEndTime = 0., t = 0.;
 #define TL(end) if (t = beat - prevEndTime, beat < (prevEndTime = end))
-
-// https://www.shadertoy.com/view/3tX3R4
-float remap(float val, float im, float ix, float om, float ox) { return clamp(om + (val - im) * (ox - om) / (ix - im), om, ox); }
-float remap01(float val, float im, float ix) { return saturate((val - im) / (ix - im)); }
 
 // Material Types
 #define VOL 0.0
