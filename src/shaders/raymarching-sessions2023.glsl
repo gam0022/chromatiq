@@ -415,6 +415,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     }
     else TL(320.) {
         ro = vec3(0., 1., -12.3);
+        target = vec3(0);
         fov = 90. + t;
     }
 
