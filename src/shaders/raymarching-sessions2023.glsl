@@ -1,7 +1,42 @@
+const float TAU = 6.28318530718;
+#define BPM 120.0
+#define saturate(x) clamp(x, 0., 1.)
 #define tri(x) (1. - 4. * abs(fract(x) - .5))
 #define phase(x) (floor(x) + .5 + .5 * cos(TAU * .5 * exp(-5. * fract(x))))
 void rot(inout vec2 p, float a) { p *= mat2(cos(a), sin(a), -sin(a), cos(a)); }
 
+// Hash without Sine by David Hoskins.
+// https://www.shadertoy.com/view/4djSRW
+float hash11(float p) {
+    p = fract(p * .1031);
+    p *= p + 33.33;
+    p *= p + p;
+    return fract(p);
+}
+
+float hash12(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+vec2 hash23(vec3 p3) {
+    p3 = fract(p3 * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+// hemisphere hash function based on a hash by Slerpy
+vec3 hashHs(vec3 n, vec3 seed) {
+    vec2 h = hash23(seed);
+    float a = h.x * 2. - 1.;
+    float b = TAU * h.y * 2. - 1.;
+    float c = sqrt(1. - a * a);
+    vec3 r = vec3(c * cos(b), a, c * sin(b));
+    return r;
+}
+
+// global vars
 vec3 ro, target;
 float fov;
 vec3 scol;
@@ -418,8 +453,6 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         target = vec3(0);
         fov = 90. + t;
     }
-
-    ro += 0.1 * fbm(vec2(beat / 4., 1.23));
 
     vec3 up = vec3(0, 1, 0);
     vec3 fwd = normalize(target - ro);
