@@ -48,8 +48,8 @@ float prevEndTime = 0., t = 0.;
 #define TL(end) if (t = beat - prevEndTime, beat < (prevEndTime = end))
 
 // Material Types
-#define VOL 0.0
-#define SOL 1.0
+#define VOL 0.
+#define SOL 1.
 
 void opUnion(inout vec4 m, float d, float type, float roughness_or_emissive, float hue) {
     if (d < m.x) m = vec4(d, type, roughness_or_emissive, hue);
@@ -58,41 +58,41 @@ void opUnion(inout vec4 m, float d, float type, float roughness_or_emissive, flo
 vec3 pal(vec4 m) {
     // Integer part: Blend ratio with white (0-10)
     // Decimal part: Hue (0-1)
-    vec3 col = vec3(0.5) + 0.5 * cos(TAU * (vec3(0.0, 0.33, 0.67) + m.w));
+    vec3 col = vec3(.5) + .5 * cos(TAU * (vec3(0., 0.33, 0.67) + m.w));
     return mix(col, vec3(.5), 0.1 * floor(m.w));
 }
 
 float sdBox(vec3 p, vec3 b) {
     vec3 q = abs(p) - b;
-    return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+    return length(max(q, 0.)) + min(max(q.x, max(q.y, q.z)), 0.);
 }
 
 float sdBox(vec2 p, vec2 b) {
-    vec2 d = abs(p) - b;
-    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+    vec2 q = abs(p) - b;
+    return length(max(q, 0.)) + min(max(q.x, q.y), 0.);
 }
 
 // https://www.shadertoy.com/view/Xd2GR3
 // { 2d cell id, distance to border, distnace to center )
 #define INV_SQRT3 0.5773503
 vec4 hexagon(inout vec2 p) {
-    vec2 q = vec2(p.x * 2.0 * INV_SQRT3, p.y + p.x * INV_SQRT3);
+    vec2 q = vec2(p.x * 2. * INV_SQRT3, p.y + p.x * INV_SQRT3);
 
     vec2 pi = floor(q);
     vec2 pf = fract(q);
 
-    float v = mod(pi.x + pi.y, 3.0);
+    float v = mod(pi.x + pi.y, 3.);
 
-    float ca = step(1.0, v);
-    float cb = step(2.0, v);
+    float ca = step(1., v);
+    float cb = step(2., v);
     vec2 ma = step(pf.xy, pf.yx);
 
     // distance to borders
-    float e = dot(ma, 1.0 - pf.yx + ca * (pf.x + pf.y - 1.0) + cb * (pf.yx - 2.0 * pf.xy));
+    float e = dot(ma, 1. - pf.yx + ca * (pf.x + pf.y - 1.) + cb * (pf.yx - 2. * pf.xy));
 
     // distance to center
-    p = vec2(q.x + floor(0.5 + p.y / 1.5), 4.0 * p.y / 3.0) * 0.5 + 0.5;
-    p = (fract(p) - 0.5) * vec2(1.0, 0.85);
+    p = vec2(q.x + floor(.5 + p.y / 1.5), 4. * p.y / 3.) * .5 + .5;
+    p = (fract(p) - .5) * vec2(1., .85);
     float f = length(p);
 
     return vec4(pi + ca - cb * ma, e, f);
@@ -321,7 +321,7 @@ void madtracer(vec3 ro1, vec3 rd1, float seed) {
         nor2 = normal(ro2);
         rd2 = mix(reflect(rd1, nor2), hashHs(nor2, vec3(seed, i, iTime)), saturate(m1.z));
         m2 = map(ro2 + rd2 * t2, true);
-        // t2 += m2.y == VOL ? 0.25 * abs(m2.x) : 0.25 * m2.x;
+        // t2 += m2.y == VOL ? 0.15 * abs(m2.x) : 0.15 * m2.x;
         t2 += 0.15 * mix(abs(m2.x), m2.x, m2.y);
         scol += .015 * (pal(m2) * max(0., m2.z - 1.) + pal(m1) * max(0., m1.z - 1.));
 
@@ -361,12 +361,12 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     boxPos.y = mix(boxPos.y, -12., smoothstep(304., 320., beat));
 
     // Camera
-    vec2 noise = hash23(vec3(iTime, fragCoord)) - 0.5;  // AA
+    vec2 noise = hash23(vec3(iTime, fragCoord)) - .5;  // AA
     vec2 uv2 = (2. * (fragCoord.xy + noise) - iResolution.xy) / iResolution.x;
 
     // 通常時カメラ
     float dice = hash11(floor(beat / 8. + 2.) * 123.);
-    if (dice < 0.8)
+    if (dice < .8)
         ro = vec3(8. * cos(beatTau / 128.), mix(-6., 6., dice), 8. * sin(beatTau / 128.));
     else
         ro = vec3(9.5 - dice * 20., 1., -12.3);
@@ -377,12 +377,12 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     // Timeline
     TL(8.) {
         ro = vec3(0, -1.36, -12.3 + t * .3);
-        target = vec3(0.0, -2.2, 0.0);
+        target = vec3(0., -2.2, 0.);
         fov = 100.;
     }
     else TL(16.) {
         ro = vec3(9.5, -1.36, -12.3 + t * .3);
-        target = vec3(0.0, -2.2, 0.0);
+        target = vec3(0., -2.2, 0.);
         fov = 100.;
     }
     else TL(20.) {
@@ -415,8 +415,8 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     else TL(104.) {
     }
     else TL(112.) {
-        ro = vec3(-5., 1.0, 18.0);
-        target = vec3(5.0, -1.0, 16.0);
+        ro = vec3(-5., 1., 18.);
+        target = vec3(5.0, -1., 16.);
         fov = 100. - t;
     }
     else TL(124.) {
@@ -428,22 +428,22 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     else TL(196.) {
     }
     else TL(202.) {
-        ro = vec3(-5., 1.0, 18.0);
-        target = vec3(5.0, -1.0, 16.0);
+        ro = vec3(-5., 1., 18.);
+        target = vec3(5.0, -1., 16.);
         fov = 100. - t;
     }
     else TL(248.) {
     }
     else TL(256.) {
-        ro = vec3(-5., 1.0, 18.0);
-        target = vec3(5.0, -1.0, 16.0);
+        ro = vec3(-5., 1., 18.);
+        target = vec3(5.0, -1., 16.);
         fov = 100. - t;
     }
     else TL(292.) {
     }
     else TL(300.) {
-        ro = vec3(-5., 1.0, 18.0);
-        target = vec3(5.0, -1.0, 16.0);
+        ro = vec3(-5., 1., 18.);
+        target = vec3(5.0, -1., 16.);
         fov = 100. - t;
     }
     else TL(304.) {
