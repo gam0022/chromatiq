@@ -58,8 +58,8 @@ void opUnion(inout vec4 m, float d, float type, float roughness_or_emissive, flo
 vec3 pal(vec4 m) {
     // Integer part: Blend ratio with white (0-10)
     // Decimal part: Hue (0-1)
-    vec3 col = vec3(.5) + .5 * cos(TAU * (vec3(0., 0.33, 0.67) + m.w));
-    return mix(col, vec3(.5), 0.1 * floor(m.w));
+    vec3 col = vec3(.5) + .5 * cos(TAU * (vec3(0., .33, .67) + m.w));
+    return mix(col, vec3(.5), .1 * floor(m.w));
 }
 
 float sdBox(vec3 p, vec3 b) {
@@ -103,15 +103,15 @@ float warning(vec2 p) {
 
     float f = fract(hash12(h.xy) + beatPhase);
     f = mix(f, saturate(sin(h.x - h.y + 4. * beatPhase)), .5 + .5 * sin(beatTau / 16.));
-    float hex = smoothstep(0.10, 0.11, h.z) * f;
+    float hex = smoothstep(.1, .11, h.z) * f;
 
     float mark = 1.;
     float dice = fract(hash12(h.xy) + beatPhase / 4.);
 
     if (dice < .25) {
-        float d = sdBox(p, vec2(0.4, dice));
+        float d = sdBox(p, vec2(.4, dice));
         float ph = phase(beat / 2. + f);
-        float ss = smoothstep(1.0, 1.05, mod(p.x * 10. + 10. * p.y + 8. * ph, 2.));
+        float ss = smoothstep(1., 1.05, mod(p.x * 10. + 10. * p.y + 8. * ph, 2.));
         mark = saturate(step(0., d) + ss);
     } else {
         vec4[] param_array = vec4[](vec4(140., 72., 0., 0.), vec4(0., 184., 482, 0.), vec4(0., 0., 753., 0.), vec4(541., 156., 453., 0.), vec4(112., 0., 301., 0.),  // 0-3
@@ -125,8 +125,8 @@ float warning(vec2 p) {
             rot(p1, TAU * param.z);
         }
 
-        float d = sdBox(p1, vec2(0.2, 0.05));
-        mark = saturate(smoothstep(0., 0.01, d));
+        float d = sdBox(p1, vec2(.2, .05));
+        mark = saturate(smoothstep(0., .01, d));
     }
 
     return saturate(hex * mark);
