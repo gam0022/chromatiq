@@ -4,10 +4,9 @@ import { mix, clamp, saturate, Vector3, remap, remapFrom, remapTo, easeInOutCubi
 // for Webpack DefinePlugin
 declare const PRODUCTION: boolean;
 
-export const bpm = 120;
-
+export const bpm = 120;  // BPM
 export const chromatiq = new Chromatiq(
-  128, // デモの長さ（秒）
+  160, // デモの長さ（秒）
   require("./shaders/build-in/vertex.glsl").default,
 
   // Image Shaders
