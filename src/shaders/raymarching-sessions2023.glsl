@@ -168,8 +168,8 @@ vec4 map(vec3 pos, bool isFull) {
         _IFS_Offset *= 0.;
         _IFS_Iteration = 1.;
     }
-    else TL(48.) {
-        float fade = saturate(phase((beat - 48.) / 4.));
+    else TL(56.) {
+        float fade = saturate(phase((beat - 56.) / 4.));
         _IFS_Iteration = 1. + fade;
         _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.) * fade;
     }
@@ -182,29 +182,29 @@ vec4 map(vec3 pos, bool isFull) {
         emi2 = true;
         hue = fract(0.12 * beatPhase);
     }
-    else TL(160.) {
+    else TL(140.) {
         emi2 = true;
         hue = fract(beatPhase * .1 + pos.z) + 1.;
         boxEmi *= 1.7;
     }
+    else TL(152.) {
+        hue = 0.;
+    }
+    else TL(160.) {
+        emi2 = true;
+        hue = 0.;
+        float a = phase(min(t / 4., 2.));
+        _IFS_Iteration = 3. + a;
+    }
     else TL(200.) {
-        emi2 = false;
-        hue = fract(.12 * beatPhase);
-    }
-    else TL(250.) {
-        emi2 = true;
-        hue = fract(.12 * beatPhase);
-    }
-    else TL(264.) {
-        hue = 0.;
-    }
-    else TL(288.) {
         emi2 = true;
         hue = 0.;
-        _IFS_Iteration = 3. + phase(min(t / 4., 2.));
+        _IFS_Iteration = 5. - phase(min((beat - 184.) / 4., 2.));
         _IFS_Rot = vec4(0.3 + 0.1 * sin(beatPhase * TAU / 8.), 0.9 + 0.1 * sin(beatPhase * TAU / 8.), 0.4, 0.);
-        _IFS_Offset = vec4(1.4, 0.66, 1.2, 1.);
+        _IFS_Offset = mix(_IFS_Offset, vec4(1.4, 0.66, 1.2, 0.), saturate(t / 8.));
         boxEmi *= .7;
+    }
+    else TL(296.) {
     }
     else TL(304.) {
         emi2 = (beat < 296.);
@@ -260,38 +260,38 @@ vec4 map(vec3 pos, bool isFull) {
         else TL(32.) {
             emi = step(1., mod(id, 2.));
         }
-        else TL(126.0) {
+        else TL(126.) {
             emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
             emi = mix(emi, step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.))), saturate(beat - 110. - pos.y));
         }
-        else TL(152.) {
+        else TL(140.) {
             emi = step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.)));
         }
-        else TL(170.) {
-            emi = pow(hash12(floor(pos.yz) + 123.23 * floor(beat * 2.)), 4.);
-            hue = 3.65;
-        }
-        else TL(200.) {
-            emi = pow(hash12(floor(pos.yz * mix(1., 16., smoothstep(198., 200., beat))) + 123.23 * floor(beat * 2.)), 4.);
-            emi = mix(emi, step(.0, emi) * step(3., mod(floor((pos.z + D) / 2.), 4.)), smoothstep(198., 200., beat));
-
-            hue = hash12(floor(pos.yz) + 123.23 * floor(beat * 8.));
-            hue = mix(hue, 10., smoothstep(196., 200., beat));
-        }
-        else TL(250.) {
-            emi = step(3., mod(floor((pos.z + D) / 2.), 4.)) * step(1., mod(floor(pos.y - pos.z - 4. * beatPhase), 2.));
-        }
-        else TL(297.) {
+        else TL(202.) {
             hue = 0.;
-            float fade1 = smoothstep(250., 256., beat);
-            float fade2 = smoothstep(292., 297., beat);
+            float fade1 = smoothstep(140., 144., beat);
+            float fade2 = smoothstep(200., 202., beat);
             float pw = mix(10., 0.6, fade1);
-            pw = mix(pw, 0.7, fade2);
+            pw = mix(pw, 20., fade2);
             emi = pow(warning(pos.zy / 2.), pw) * mix(1., step(0., sin(t * 15. * TAU)), fade1 * fade2);
             emi = step(0.5, emi) * emi * 1.05;
         }
+        else TL(224.) {
+            emi = pow(hash12(floor(pos.yz) + 123.23 * floor(beat * 2.)), 4.) * smoothstep(0., 4., t);
+            hue = 3.65;
+        }
+        else TL(280.) {
+            float fade1 = smoothstep(276., 280., beat);
+            float fade2 = smoothstep(274., 280., beat);
+
+            emi = pow(hash12(floor(pos.yz * mix(1., 16., fade1)) + 123.23 * floor(beat * 2.)), 4.);
+            emi = mix(emi, step(.0, emi) * step(3., mod(floor((pos.z + D) / 2.), 4.)), fade1);
+
+            hue = hash12(floor(pos.yz) + 123.23 * floor(beat * 8.));
+            hue = mix(hue, 10., fade2);
+        }
         else TL(320.) {
-            emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
+            emi = step(3., mod(floor((pos.z + D) / 2.), 4.)) * step(1., mod(floor(pos.y - pos.z - 4. * beatPhase), 2.));
         }
     }
 
@@ -395,20 +395,20 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         target = vec3(0., -8., -0.);
         fov = 60.0 + t;
     }
-    else TL(38.) {
+    else TL(40.) {
         ro = vec3(10.8, -4.2, -7.2 + t * .1);
         fov = 93.;
     }
-    else TL(44.) {
+    else TL(56.) {
         ro = vec3(0., 1., -12.3);
         target = vec3(0);
         fov = 100. - t;
     }
-    else TL(60.) {
+    else TL(64.) {
         ro = vec3(0., 1., -12.3);
-        fov = 70. - t;
+        fov = 80. - t;
     }
-    else TL(70.) {
+    else TL(80.) {
         ro = vec3(8. * cos(beatTau / 128.), 1., 8. * sin(beatTau / 128.));
         fov = 70.;
     }
@@ -425,23 +425,34 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         ro = vec3(0., 1., -12.3);
         fov = 70. - t;
     }
-    else TL(196.) {
+    else TL(138.) {
     }
-    else TL(202.) {
+    else TL(148.) {
         ro = vec3(-5., 1., 18.);
         target = vec3(5.0, -1., 16.);
         fov = 100. - t;
     }
-    else TL(248.) {
+    else TL(168.) {
     }
-    else TL(256.) {
+    else TL(172.) {
+        ro = vec3(4. * cos(beatTau / 128.), 1., 4. * sin(beatTau / 128.));
+    }
+    else TL(178.) {
+        ro = vec3(2., 1., -12.3);
+    }
+    else TL(192.) {
+        ro = vec3(4. * cos(beatTau / 128.), 1., 4. * sin(beatTau / 128.));
+    }
+    else TL(198.) {
+    }
+    else TL(208.) {
         ro = vec3(-5., 1., 18.);
         target = vec3(5.0, -1., 16.);
         fov = 100. - t;
     }
-    else TL(292.) {
+    else TL(274.) {
     }
-    else TL(300.) {
+    else TL(284.) {
         ro = vec3(-5., 1., 18.);
         target = vec3(5.0, -1., 16.);
         fov = 100. - t;
