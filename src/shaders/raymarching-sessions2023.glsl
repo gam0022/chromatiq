@@ -149,7 +149,7 @@ vec4 map(vec3 pos, bool isFull) {
 
     float boxEmi;
 
-    if (mod(beat, 8.) > 4.) {
+    if (mod(beat, 8.) > 2. + step(56., beat) * 2.) {
         boxEmi = 2.2 * saturate(sin(beatTau * 4.));
     } else {
         boxEmi = 2.2 * abs(cos((beatTau - p1.y) / 4.));
@@ -410,7 +410,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     }
     else TL(104.) {
     }
-    else TL(112.) {
+    else TL(110.) {
         ro = vec3(-5., 1., 18.);
         target = vec3(5.0, -1., 16.);
         fov = 100. - t;
@@ -435,7 +435,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         ro = vec3(0, 0, 7. + t / 4.);
     }
     else TL(198.) {
-        ro = vec3(8. * cos(beatTau / 128.), -3, 8. * sin(beatTau / 128.));
+        ro = vec3(8. * cos(beatTau / 128.), -3. + t / 4., 8. * sin(beatTau / 128.));
     }
     else TL(208.) {
         ro = vec3(-5., 1., 18.);
