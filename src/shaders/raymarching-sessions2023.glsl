@@ -155,7 +155,7 @@ vec4 map(vec3 pos, bool isFull) {
         boxEmi = 2.2 * abs(cos((beatTau - p1.y) / 4.));
     }
 
-    vec4 _IFS_Rot = vec4(0.34 + beatPhase / 2.3, -0.28, 1.03, 0.);
+    vec4 _IFS_Rot = vec4(0.34 + beatPhase / 2.3, -0.28, 0.03, 0.);
     vec4 _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.);
     float _IFS_Iteration = phase(tri(beat / 16.) + 2.);
     vec4 _IFS_BoxBase = vec4(1, 1, 1, 0);
@@ -199,10 +199,10 @@ vec4 map(vec3 pos, bool isFull) {
     }
     else TL(200.) {
         emi2 = true;
-        hue = 0.;
+        hue = smoothstep(191., 192., beat) * 0.65;
         _IFS_Iteration = 5. - phase(min((beat - 184.) / 4., 2.));
-        _IFS_Rot = vec4(0.3 + 0.1 * sin(beatPhase * TAU / 8.), 0.9 + 0.1 * sin(beatPhase * TAU / 8.), 0.4, 0.);
-        _IFS_Offset = mix(_IFS_Offset, vec4(1.4, 0.66, 1.2, 0.), saturate(t / 8.));
+        _IFS_Rot = vec4(0.3 + 0.1 * sin(beatPhase * TAU / 8.), 0.9, 0.4, 0.);
+        _IFS_Offset = mix(_IFS_Offset, vec4(1.4, 0.66, 1.2, 0.), saturate(t / 2.));
         boxEmi *= .7;
     }
     else TL(280.) {
@@ -435,18 +435,13 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         target = vec3(5.0, -1., 16.);
         fov = 100. - t;
     }
-    else TL(168.) {
-    }
-    else TL(172.) {
-        ro = vec3(4. * cos(beatTau / 128.), 1., 4. * sin(beatTau / 128.));
+    else TL(160.) {
     }
     else TL(178.) {
-        ro = vec3(2., 1., -12.3);
-    }
-    else TL(192.) {
-        ro = vec3(4. * cos(beatTau / 128.), 1., 4. * sin(beatTau / 128.));
+        ro = vec3(0, 0, 7. + t);
     }
     else TL(198.) {
+        ro = vec3(10. * cos(beatTau / 128.), -2, 10. * sin(beatTau / 128.));
     }
     else TL(208.) {
         ro = vec3(-5., 1., 18.);
@@ -466,6 +461,12 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         ro = vec3(0., 1., -12.3);
         target = vec3(0);
         fov = 90. + t;
+    }
+
+    if (gCameraDebug > 0.) {
+        ro = vec3(gCameraEyeX, gCameraEyeY, gCameraEyeZ);
+        target = vec3(gCameraTargetX, gCameraTargetY, gCameraTargetZ);
+        fov = gCameraFov;
     }
 
     vec3 up = vec3(0, 1, 0);
