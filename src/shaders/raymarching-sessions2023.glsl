@@ -191,20 +191,12 @@ vec4 map(vec3 pos, bool isFull) {
     else TL(152.) {
         hue = 0.;
     }
-    else TL(160.) {
-        emi2 = true;
-        hue = 0.;
-        _IFS_Iteration = 3. + phase(min(t / 4., 2.));
-        _IFS_Rot = vec4(.3 + .1 * sin(beatPhase * TAU / 8.), .9 + .1 * sin(beatPhase * TAU / 8.), .4, 0.);
-        _IFS_Offset = vec4(1.4, 0.66, 1.2, 1.);
-    }
     else TL(200.) {
         emi2 = true;
         hue = smoothstep(191., 192., beat) * 0.65;
-        _IFS_Iteration = 5. - phase(min((beat - 184.) / 4., 2.));
-        _IFS_Rot = vec4(.3 + .1 * sin(beatPhase * TAU / 8.), .9, .4, 0.);
-        _IFS_Offset = mix(_IFS_Offset, vec4(1.4, 0.66, 1.2, 0.), saturate(t / 2.));
-        boxEmi *= .7;
+        _IFS_Iteration = 3. + phase(min(t / 4., 2.)) - phase(clamp((beat - 184.) / 4., 0., 2.));
+        _IFS_Rot = vec4(.3 + .1 * sin(beatPhase * TAU / 8.), .9 + .1 * sin(beatPhase * TAU / 8.), .4, 0.);
+        _IFS_Offset = vec4(1.4, 0.66, 1.2, 1.);
     }
     else TL(280.) {
         emi2 = true;
@@ -440,10 +432,10 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         ro *= 1.6;
     }
     else TL(178.) {
-        ro = vec3(0, 0, 7. + t);
+        ro = vec3(0, 0, 7. + t / 4.);
     }
     else TL(198.) {
-        ro = vec3(10. * cos(beatTau / 128.), -2, 10. * sin(beatTau / 128.));
+        ro = vec3(8. * cos(beatTau / 128.), -3, 8. * sin(beatTau / 128.));
     }
     else TL(208.) {
         ro = vec3(-5., 1., 18.);
