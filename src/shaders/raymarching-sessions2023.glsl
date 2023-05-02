@@ -73,7 +73,7 @@ float sdBox(vec2 p, vec2 b) {
 }
 
 // https://www.shadertoy.com/view/Xd2GR3
-// { 2d cell id, distance to border, distnace to center )
+// return: { 2d cell id (vec2), distance to border, distnace to center }
 #define INV_SQRT3 0.5773503
 vec4 hexagon(inout vec2 p) {
     vec2 q = vec2(p.x * 2. * INV_SQRT3, p.y + p.x * INV_SQRT3);
@@ -457,11 +457,13 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         fov = 90. + t;
     }
 
+#ifdef DEBUG_CAMERA
     if (gCameraDebug > 0.) {
         ro = vec3(gCameraEyeX, gCameraEyeY, gCameraEyeZ);
         target = vec3(gCameraTargetX, gCameraTargetY, gCameraTargetZ);
         fov = gCameraFov;
     }
+#endif
 
     vec3 up = vec3(0, 1, 0);
     vec3 fwd = normalize(target - ro);
