@@ -1,21 +1,32 @@
-# WebGL Volumetric Fog (UE76)
+# Projects
+
+## Project3: SESSIONS 2023: Transcendental Cube
+
+2nd place at GLSL Graphics Compo, [SESSIONS](https://sessions.frontl1ne.net/) 2023 :2nd_place_medal:
+
+- [:tv: YouTube](https://youtu.be/194E3UWj870)
+- [:eye: Shadertoy](https://www.shadertoy.com/view/dldGzj)
+- [:bird: Twitter](https://twitter.com/gam0022/status/1653096277184503808)
+- [:package: Pouet](https://www.pouet.net/prod.php?which=94339)
+
+![sessions2023](screenshots/sessions2023.jpg)
+
+## Project2: WebGL Volumetric Fog (UE76)
 
 A WebGL 64KB Intro for [#S1C002](https://neort.io/tag/bqr6ous3p9f48fkis91g), [#Shader1weekCompo](https://neort.io/tag/br0go2s3p9f194rkgmj0)
 
 Imspired by [Ray Marching Fog With Blue Noise](https://blog.demofox.org/2020/05/10/ray-marching-fog-with-blue-noise/) by @Atrix256
 
-![volumetric-fog.jpg](volumetric-fog.jpg)
-
-## Run
-
-Run in browser on your PC! (only tested latest Chrome)
-
 - [NEORT version](https://neort.io/art/br0go2k3p9f194rkgmgg)
-
-## Links
-
 - [:tv: YouTube](https://youtu.be/8BEFyZzk6jI)
 - [:bird: Twitter](https://twitter.com/gam0022/status/1261967964955279360/)
+
+![volumetric-fog](screenshots/volumetric-fog.jpg)
+
+## Project1: RE: SIMULATED
+
+https://github.com/gam0022/resimulated
+
 
 ## Development
 

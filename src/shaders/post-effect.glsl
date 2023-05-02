@@ -14,6 +14,7 @@ uniform float gGlitchIntensity;  // 0 0 0.1
 uniform float gXSfhitGlitch;     // 0 0 0.1
 uniform float gInvertRate;       // 0 0 1
 
+/*
 vec3 chromaticAberration(vec2 uv) {
     uv.x += gXSfhitGlitch * (fbm(vec2(232.0 * uv.y, beat)) - 0.5);
 
@@ -59,7 +60,7 @@ vec3 invert(vec3 c, vec2 uv) {
 }
 
 vec3 flash(vec3 c) {
-    c = mix(c, vec3(1.0), gFlash * saturate(cos(iTime * PI * gFlashSpeed)));
+    c = mix(c, vec3(1.0), gFlash * saturate(cos(iTime * PI * .5 * gFlashSpeed)));
     return c;
 }
 
@@ -78,5 +79,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     col = invert(col, uv);
     col = flash(col);
     col = blend(col);
+    fragColor = vec4(col, 1.0);
+}
+
+*/
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 uv = fragCoord / iResolution.xy;
+    vec3 col = texture(iPrevPass, uv).rgb;
     fragColor = vec4(col, 1.0);
 }
