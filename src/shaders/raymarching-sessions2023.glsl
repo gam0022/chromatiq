@@ -72,6 +72,7 @@ float sdBox(vec2 p, vec2 b) {
     return length(max(q, 0.)) + min(max(q.x, q.y), 0.);
 }
 
+// Hexagons - distance by iq
 // https://www.shadertoy.com/view/Xd2GR3
 // return: { 2d cell id (vec2), distance to border, distnace to center }
 #define INV_SQRT3 0.5773503
@@ -305,7 +306,7 @@ vec3 normal(vec3 p) {
     return normalize(map(p, false).x - vec3(map(p - e.yxx, false).x, map(p - e.xyx, false).x, map(p - e.xxy, false).x));
 }
 
-// Ref. EOT - Grid scene by Virgill
+// Based on EOT - Grid scene by Virgill
 // https://www.shadertoy.com/view/Xt3cWS
 void madtracer(vec3 ro1, vec3 rd1, float seed) {
     scol = vec3(0);
