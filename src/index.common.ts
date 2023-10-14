@@ -13,7 +13,7 @@ export const chromatiq = new Chromatiq(
   require("./shaders/common-header.glsl").default,
   [
     // require("./shaders/raymarching-mandel.glsl").default,
-    require("./shaders/raymarching-sessions2023.glsl").default,
+    require("./shaders/raymarching-tdf16ms.glsl").default,
     require("./shaders/post-effect.glsl").default,
     // require("./shaders/effects/debug-circle.glsl").default,
   ],
