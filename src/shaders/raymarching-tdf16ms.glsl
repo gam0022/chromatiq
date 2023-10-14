@@ -20,6 +20,12 @@ float hash12(vec2 p) {
     return fract((p3.x + p3.y) * p3.z);
 }
 
+vec2 hash22(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xx + p3.yz) * p3.zy);
+}
+
 vec2 hash23(vec3 p3) {
     p3 = fract(p3 * vec3(.1031, .1030, .0973));
     p3 += dot(p3, p3.yzx + 33.33);
@@ -133,6 +139,40 @@ float warning(vec2 p) {
     return saturate(hex * mark);
 }
 
+// マンハッタン距離によるボロノイ
+// https://qiita.com/7CIT/items/4126d23ffb1b28b80f27
+// https://neort.io/art/br0fmis3p9f48fkiuk50
+float voronoi(vec2 uv) {
+    vec2 i = floor(uv);
+    vec2 f = fract(uv);
+    vec2 res = vec2(8, 8);
+
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            vec2 n = vec2(x, y);
+            vec2 np = 0.5 + 0.5 * sin(beatPhase + hash22(i + n));
+            vec2 p = n + np - f;
+
+            // マンハッタン距離
+            float d = abs(p.x) + abs(p.y);
+            // float d = length(p);
+            // float d = lpnorm(p, -3);
+
+            if (d < res.x) {
+                res.y = res.x;
+                res.x = d;
+            } else if (d < res.y) {
+                res.y = d;
+            }
+        }
+    }
+
+    float c = res.y - res.x;
+    c = sqrt(c);
+    c = smoothstep(0.4, 0.0, c);
+    return c;
+}
+
 vec4 map(vec3 pos, bool isFull) {
     vec4 m = vec4(2, VOL, 0, 0);
     // x: Distance
@@ -144,156 +184,38 @@ vec4 map(vec3 pos, bool isFull) {
     float a = .1;
     float W = 16.;
     float H = 8.;
-    float D = 30.;
+    float D = 16.;
 
-    vec3 p1 = pos;
+    vec3 p1 = pos - boxPos;
 
     float boxEmi;
 
-    if (mod(beat, 8.) > 2. + step(56., beat) * 2.) {
-        boxEmi = 2.2 * saturate(sin(beatTau * 4.));
-    } else {
-        boxEmi = 2.2 * abs(cos((beatTau - p1.y) / 4.));
-    }
-
-    vec4 _IFS_Rot = vec4(0.34 + beatPhase / 2.3, -0.28, 0.03, 0.);
-    vec4 _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.);
-    float _IFS_Iteration = phase(tri(beat / 16.) + 2.);
-    vec4 _IFS_BoxBase = vec4(1, 1, 1, 0);
-    vec4 _IFS_BoxEmissive = vec4(0.05, 1.05, 1.05, 0);
+    boxEmi = 1.8 * abs(cos((beatTau - p1.y * 2.) / 8.));
+    vec4 _IFS_BoxBase = vec4(1, 1, 1, 0) * 2.;
 
     float hue = 0.5;
-    bool emi2 = false;
-
-    TL(40.) {
-        _IFS_Rot *= 0.;
-        _IFS_Offset *= 0.;
-        _IFS_Iteration = 1.;
-    }
-    else TL(56.) {
-        float fade = saturate(phase((beat - 56.) / 4.));
-        _IFS_Iteration = 1. + fade;
-        _IFS_Offset = vec4(1.36, 0.06, 0.69, 1.) * fade;
-    }
-    else TL(84.) {
-    }
-    else TL(96.) {
-        emi2 = true;
-    }
-    else TL(128.) {
-        emi2 = true;
-        hue = fract(.12 * beatPhase);
-    }
-    else TL(140.) {
-        emi2 = true;
-        hue = fract(beatPhase * .1 + pos.z) + 1.;
-        boxEmi *= 1.7;
-    }
-    else TL(152.) {
-        hue = 0.;
-    }
-    else TL(200.) {
-        emi2 = true;
-        hue = smoothstep(191., 192., beat) * 0.65;
-        _IFS_Iteration = 3. + phase(min(t / 4., 2.)) - phase(clamp((beat - 184.) / 4., 0., 2.));
-        _IFS_Rot = vec4(.3 + .1 * sin(beatPhase * TAU / 8.), .9 + .1 * sin(beatPhase * TAU / 8.), .4, 0.);
-        _IFS_Offset = vec4(1.4, 0.66, 1.2, 1.);
-    }
-    else TL(280.) {
-        emi2 = true;
-        hue = fract(beat * .12);
-        _IFS_Offset = vec4(2., 0.3, 0.3 + 0.3 * sin(beatTau / 8.), 1.);
-        _IFS_Rot = vec4(0.4 + phase(beat) / 2.3, -0.28 + phase(beat) / 2., 0.05, 0.);
-    }
-    else TL(296.) {
-    }
-    else TL(304.) {
-        emi2 = (beat < 296.);
-        _IFS_Iteration = 4. - phase(min(t / 8., 2.));
-    }
-    else TL(320.) {
-        float a = phase(saturate(t / 8.));
-        _IFS_Iteration = 2. - a;
-        _IFS_Rot *= (1. - a);
-        _IFS_Offset *= (1. - a);
-    }
-
-    p1 -= (boxPos + _IFS_Offset.xyz);
-
-    vec3 pp1 = p1;
-
-    for (int i = 0; i < int(_IFS_Iteration); i++) {
-        pp1 = p1 + _IFS_Offset.xyz;
-        p1 = abs(p1 + _IFS_Offset.xyz) - _IFS_Offset.xyz;
-        rot(p1.xz, TAU * _IFS_Rot.x);
-        rot(p1.zy, TAU * _IFS_Rot.y);
-        rot(p1.xy, TAU * _IFS_Rot.z);
-    }
+    float emi = 0.;
 
     vec4 mp = m;
-    opUnion(m, sdBox(p1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
-    opUnion(m, sdBox(p1, _IFS_BoxEmissive.xyz), SOL, roughness + boxEmi, hue);
-    if (emi2) opUnion(m, sdBox(p1, _IFS_BoxEmissive.yzx), SOL, roughness + boxEmi, hue + 0.5);
-    opUnion(mp, sdBox(pp1, _IFS_BoxBase.xyz), SOL, roughness, 0.5);
-    opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.xyz), SOL, roughness + boxEmi, hue);
-    if (emi2) opUnion(mp, sdBox(pp1, _IFS_BoxEmissive.yzx), SOL, roughness + boxEmi, hue + 0.5);
-
-    m = mix(mp, m, fract(_IFS_Iteration));
+    opUnion(m, max(sdBox(p1, _IFS_BoxBase.xyz) + voronoi((pos.zy)), sdBox(p1, _IFS_BoxBase.xyz - vec3(0.05))), SOL, roughness, hue);
+    opUnion(m, sdBox(p1, _IFS_BoxBase.xyz - vec3(0.2)), SOL, roughness + boxEmi, hue);
 
     // room
     vec3 p2 = abs(pos);
-    float hole = sdBox(pos - vec3(0., -H - 0.5, 0.), vec3(1.1) * smoothstep(18., 24., beat));
 
     // floor and ceil
-    opUnion(m, max(sdBox(p2 - vec3(0, H + 4., 0), vec3(W, 4., D)), -hole), SOL, roughness, 10.);
+    opUnion(m, sdBox(p2 - vec3(0, H + 4., 0), vec3(W, 4., D)), SOL, roughness, 10.);
 
     // door
-    float emi = step(p2.x, 2.) * step(p2.y, 2.);
-    if (mod(beat, 2.) < 1. && (beat < 48. || beat > 300.)) emi = 1. - emi;
+    emi = step(p2.x, 2.) * step(p2.y, 2.);
+    // if (mod(beat, 2.) < 1. && (beat < 48. || beat > 300.)) emi = 1. - emi;
     opUnion(m, sdBox(p2 - vec3(0, 0, D + a), vec3(W, H, a)), SOL, roughness + emi * 2., 10.0);
 
     // wall
     if (isFull) {
         float id = floor((pos.z + D) / 4.);
+        emi = step(1., mod(id, 2.));
         hue = 10.;
-
-        TL(18.) { emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.)); }
-        else TL(32.) {
-            emi = step(1., mod(id, 2.));
-        }
-        else TL(126.) {
-            emi = step(1., mod(id, 2.)) * step(id, mod(beat * 4., 16.));
-            emi = mix(emi, step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.))), saturate(beat - 112. - pos.y));
-        }
-        else TL(140.) {
-            emi = step(.5, hash12(floor(pos.yz) + 123.23 * floor(beat * 2.)));
-        }
-        else TL(202.) {
-            hue = 0.;
-            float fade1 = smoothstep(140., 144., beat);
-            float fade2 = smoothstep(200., 202., beat);
-            float pw = mix(10., 0.6, fade1);
-            pw = mix(pw, 20., fade2);
-            emi = pow(warning(pos.zy / 2.), pw) * mix(1., step(0., sin(t * 15. * TAU)), fade1 * fade2);
-            emi = step(0.5, emi) * emi * 1.05;
-        }
-        else TL(224.) {
-            emi = pow(hash12(floor(pos.yz) + 123.23 * floor(beat * 2.)), 4.) * smoothstep(0., 4., t);
-            hue = 3.65;
-        }
-        else TL(280.) {
-            float fade1 = smoothstep(276., 280., beat);
-            float fade2 = smoothstep(274., 280., beat);
-
-            emi = pow(hash12(floor(pos.yz * mix(1., 16., fade1)) + 123.23 * floor(beat * 2.)), 4.);
-            emi = mix(emi, step(.0, emi) * step(3., mod(floor((pos.z + D) / 2.), 4.)), fade1);
-
-            hue = hash12(floor(pos.yz) + 123.23 * floor(beat * 8.));
-            hue = mix(hue, 10., fade2);
-        }
-        else TL(320.) {
-            emi = step(3., mod(floor((pos.z + D) / 2.), 4.)) * step(1., mod(floor(pos.y - pos.z - 4. * beatPhase), 2.));
-        }
     }
 
     opUnion(m, sdBox(p2 - vec3(W + a, 0, 0), vec3(a, H, D)), SOL, roughness + emi * 2., hue);
@@ -357,9 +279,9 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
 
     vec2 uv = fragCoord.xy / iResolution.xy;
 
-    boxPos = vec3(0);
-    boxPos.y = mix(-12., 0., smoothstep(20., 48., beat));
-    boxPos.y = mix(boxPos.y, -12., smoothstep(304., 320., beat));
+    boxPos = vec3(0, -6, 0);
+    // boxPos.y = mix(-12., 0., smoothstep(20., 48., beat));
+    // boxPos.y = mix(boxPos.y, -12., smoothstep(304., 320., beat));
 
     // Camera
     vec2 noise = hash23(vec3(iTime, fragCoord)) - .5;  // AA
@@ -373,90 +295,12 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         ro = vec3(9.5 - dice * 20., 1., -12.3);
 
     target = boxPos;
-    fov = 120.;
+    // target = vec3(0, -2, 0);
+    fov = 90.;
 
-    // Timeline
-    TL(8.) {
-        ro = vec3(0, -1.36, -12.3 + t * .3);
-        target = vec3(0., -2.2, 0.);
-        fov = 100.;
-    }
-    else TL(16.) {
-        ro = vec3(9.5, -1.36, -12.3 + t * .3);
-        target = vec3(0., -2.2, 0.);
-        fov = 100.;
-    }
-    else TL(20.) {
-        ro = vec3(5.5, -5, -1.2);
-        target = vec3(0., -8., -0.);
-        fov = 100.0 + t;
-    }
-    else TL(32.) {
-        ro = vec3(5.5, -5, -1.2);
-        target = vec3(0., -8., -0.);
-        fov = 60.0 + t;
-    }
-    else TL(40.) {
-        ro = vec3(10.8, -4.2, -7.2 + t * .1);
-        fov = 93.;
-    }
-    else TL(64.) {
-        ro = vec3(0., 1., -12.3);
-        target = vec3(0);
-        fov = 100. - t;
-    }
-    else TL(80.) {
-        ro = vec3(8. * cos(beatTau / 128.), 1., 8. * sin(beatTau / 128.));
-        fov = 80.;
-    }
-    else TL(104.) {
-    }
-    else TL(110.) {
-        ro = vec3(-5., 1., 18.);
-        target = vec3(5.0, -1., 16.);
-        fov = 100. - t;
-    }
-    else TL(124.) {
-    }
-    else TL(130.) {
-        ro = vec3(0., 1., -12.3);
-        fov = 70. - t;
-    }
-    else TL(138.) {
-    }
-    else TL(148.) {
-        ro = vec3(-5., 1., 18.);
-        target = vec3(5.0, -1., 16.);
-        fov = 100. - t;
-    }
-    else TL(160.) {
-        ro *= 1.6;
-    }
-    else TL(178.) {
-        ro = vec3(0, 0, 7. + t / 4.);
-    }
-    else TL(198.) {
-        ro = vec3(8. * cos(beatTau / 128.), -3. + t / 4., 8. * sin(beatTau / 128.));
-    }
-    else TL(208.) {
-        ro = vec3(-5., 1., 18.);
-        target = vec3(5.0, -1., 16.);
-        fov = 100. - t;
-    }
-    else TL(274.) {
-    }
-    else TL(284.) {
-        ro = vec3(-5., 1., 18.);
-        target = vec3(5.0, -1., 16.);
-        fov = 100. - t;
-    }
-    else TL(304.) {
-    }
-    else TL(320.) {
-        ro = vec3(0., 1., -12.3);
-        target = vec3(0);
-        fov = 90. + t;
-    }
+    // ro = vec3(1.0 * cos(beatTau / 128.), -4., 1.0 * sin(beatTau / 128.));
+    ro = vec3(4, -6., 1.);
+    ro = vec3(7. * cos(beatTau / 128.), -6., 7. * sin(beatTau / 128.));
 
 #ifdef DEBUG_CAMERA
     if (gCameraDebug > 0.) {
