@@ -57,6 +57,8 @@ float prevEndTime = 0., t = 0.;
 #define VOL 0.
 #define SOL 1.
 
+vec2 opRep(vec2 p, vec2 a) { return mod(p, a) - 0.5 * a; }
+
 void opUnion(inout vec4 m, float d, float type, float roughness_or_emissive, float hue) {
     if (d < m.x) m = vec4(d, type, roughness_or_emissive, hue);
 }
@@ -73,72 +75,6 @@ float sdBox(vec3 p, vec3 b) {
     return length(max(q, 0.)) + min(max(q.x, max(q.y, q.z)), 0.);
 }
 
-float sdBox(vec2 p, vec2 b) {
-    vec2 q = abs(p) - b;
-    return length(max(q, 0.)) + min(max(q.x, q.y), 0.);
-}
-
-// Hexagons - distance by iq
-// https://www.shadertoy.com/view/Xd2GR3
-// return: { 2d cell id (vec2), distance to border, distnace to center }
-#define INV_SQRT3 0.5773503
-vec4 hexagon(inout vec2 p) {
-    vec2 q = vec2(p.x * 2. * INV_SQRT3, p.y + p.x * INV_SQRT3);
-
-    vec2 pi = floor(q);
-    vec2 pf = fract(q);
-
-    float v = mod(pi.x + pi.y, 3.);
-
-    float ca = step(1., v);
-    float cb = step(2., v);
-    vec2 ma = step(pf.xy, pf.yx);
-
-    // distance to borders
-    float e = dot(ma, 1. - pf.yx + ca * (pf.x + pf.y - 1.) + cb * (pf.yx - 2. * pf.xy));
-
-    // distance to center
-    p = vec2(q.x + floor(.5 + p.y / 1.5), 4. * p.y / 3.) * .5 + .5;
-    p = (fract(p) - .5) * vec2(1., .85);
-    float f = length(p);
-
-    return vec4(pi + ca - cb * ma, e, f);
-}
-
-float warning(vec2 p) {
-    vec4 h = hexagon(p);
-
-    float f = fract(hash12(h.xy) + beatPhase);
-    f = mix(f, saturate(sin(h.x - h.y + 4. * beatPhase)), .5 + .5 * sin(beatTau / 16.));
-    float hex = smoothstep(.1, .11, h.z) * f;
-
-    float mark = 1.;
-    float dice = fract(hash12(h.xy) + beatPhase / 4.);
-
-    if (dice < .25) {
-        float d = sdBox(p, vec2(.4, dice));
-        float ph = phase(beat / 2. + f);
-        float ss = smoothstep(1., 1.05, mod(p.x * 10. + 10. * p.y + 8. * ph, 2.));
-        mark = saturate(step(0., d) + ss);
-    } else {
-        vec4[] param_array = vec4[](vec4(140., 72., 0., 0.), vec4(0., 184., 482, 0.), vec4(0., 0., 753., 0.), vec4(541., 156., 453., 0.), vec4(112., 0., 301., 0.),  // 0-3
-                                    vec4(311., 172., 50., 0.), vec4(249., 40., 492., 0.), vec4(0.), vec4(1.));                                                       // 4-7
-
-        vec4 param = param_array[int(mod(dice * 33.01, 8.))] / vec2(1200., 675.).xyxy;
-        // param = PU;
-        vec2 p1 = p - param.xy;
-        for (int i = 0; i < 3; i++) {
-            p1 = abs(p1 + param.xy) - param.xy;
-            rot(p1, TAU * param.z);
-        }
-
-        float d = sdBox(p1, vec2(.2, .05));
-        mark = saturate(smoothstep(0., .01, d));
-    }
-
-    return saturate(hex * mark);
-}
-
 // マンハッタン距離によるボロノイ
 // https://qiita.com/7CIT/items/4126d23ffb1b28b80f27
 // https://neort.io/art/br0fmis3p9f48fkiuk50
@@ -150,7 +86,7 @@ float voronoi(vec2 uv) {
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
             vec2 n = vec2(x, y);
-            vec2 np = 0.5 + 0.5 * sin(beatPhase + hash22(i + n));
+            vec2 np = 0.5 + 0.5 * sin(beatPhase * TAU / 4. + TAU * hash22(i + n));
             vec2 p = n + np - f;
 
             // マンハッタン距離
@@ -181,44 +117,27 @@ vec4 map(vec3 pos, bool isFull) {
     // w: ColorPalette
 
     float roughness = 0.05;
-    float a = .1;
-    float W = 16.;
-    float H = 8.;
-    float D = 16.;
 
-    vec3 p1 = pos - boxPos;
+    vec3 p1 = pos;
+    p1.xz = opRep(p1.xz, vec2(8.));
+    p1.y += sin(pos.x / 4. + pos.z / 4. + beatTau / 8.);
 
-    float boxEmi;
+    float emi = 1.8 * abs(cos((beatTau - pos.z * 2.) / 8.));
+    float hue = fract(beat / 16.);
+    if (beat > 16.) hue += fract(pos.z / 8.);
 
-    boxEmi = 1.8 * abs(cos((beatTau - p1.y * 2.) / 8.));
-    vec4 _IFS_BoxBase = vec4(1, 1, 1, 0) * 2.;
-
-    float hue = 0.5;
-    float emi = 0.;
-
-    vec4 mp = m;
-    opUnion(m, max(sdBox(p1, _IFS_BoxBase.xyz) + voronoi((pos.zy)), sdBox(p1, _IFS_BoxBase.xyz - vec3(0.05))), SOL, roughness, hue);
-    opUnion(m, sdBox(p1, _IFS_BoxBase.xyz - vec3(0.2)), SOL, roughness + boxEmi, hue);
-
-    // room
-    vec3 p2 = abs(pos);
-
-    // floor and ceil
-    opUnion(m, sdBox(p2 - vec3(0, H + 4., 0), vec3(W, 4., D)), SOL, roughness, 10.);
-
-    // door
-    emi = step(p2.x, 2.) * step(p2.y, 2.);
-    // if (mod(beat, 2.) < 1. && (beat < 48. || beat > 300.)) emi = 1. - emi;
-    opUnion(m, sdBox(p2 - vec3(0, 0, D + a), vec3(W, H, a)), SOL, roughness + emi * 2., 10.0);
+    vec3 size = vec3(4, 0.5, 4);
+    opUnion(m, sdBox(p1, size) + voronoi(pos.xz), SOL, roughness, hue);
+    opUnion(m, sdBox(p1 - vec3(0, -0.2, 0), size), SOL, roughness + emi, hue);
 
     // wall
     if (isFull) {
-        float id = floor((pos.z + D) / 4.);
-        emi = step(1., mod(id, 2.));
+        float id = floor((abs(pos.x) - 2.) / 4.);
+        emi = step(0.8, cos(TAU * pos.x * 0.5));
         hue = 10.;
     }
 
-    opUnion(m, sdBox(p2 - vec3(W + a, 0, 0), vec3(a, H, D)), SOL, roughness + emi * 2., hue);
+    opUnion(m, sdBox(p1 - vec3(0, 4, 0), size), SOL, 0.0 + emi * 2., hue);
 
     return m;
 }
@@ -236,7 +155,7 @@ void madtracer(vec3 ro1, vec3 rd1, float seed) {
     float t = rand.x, t2 = rand.y;
     vec4 m1, m2;
     vec3 rd2, ro2, nor2;
-    for (int i = 0; i < 130; i++) {
+    for (int i = 0; i < 60; i++) {
         m1 = map(ro1 + rd1 * t, true);
         // t += m1.y == VOL ? 0.25 * abs(m1.x) + 0.0008 : 0.25 * m1.x;
         t += 0.25 * mix(abs(m1.x) + 0.0032, m1.x, m1.y);
@@ -245,7 +164,7 @@ void madtracer(vec3 ro1, vec3 rd1, float seed) {
         rd2 = mix(reflect(rd1, nor2), hashHs(nor2, vec3(seed, i, iTime)), saturate(m1.z));
         m2 = map(ro2 + rd2 * t2, true);
         // t2 += m2.y == VOL ? 0.15 * abs(m2.x) : 0.15 * m2.x;
-        t2 += 0.15 * mix(abs(m2.x), m2.x, m2.y);
+        t2 += 0.04 * mix(abs(m2.x), m2.x, m2.y);
         scol += .015 * (pal(m2) * max(0., m2.z - 1.) + pal(m1) * max(0., m1.z - 1.));
 
         // force disable unroll for WebGL 1.0
@@ -289,18 +208,15 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
 
     // 通常時カメラ
     float dice = hash11(floor(beat / 8. + 2.) * 123.);
-    if (dice < .8)
-        ro = vec3(8. * cos(beatTau / 128.), mix(-6., 6., dice), 8. * sin(beatTau / 128.));
-    else
-        ro = vec3(9.5 - dice * 20., 1., -12.3);
+    if (dice < .8) {
+        ro = vec3(10, 2. + 0.1 * sin(beatTau / 8.), beat * 0.1);
+        target = ro + vec3(0, -1., 1. + sin(beatTau / 16.));
+    } else {
+        ro = vec3(10, 1.5, beat * 0.7);
+        target = ro + vec3(0, -0.05, 1);
+    }
 
-    target = boxPos;
-    // target = vec3(0, -2, 0);
     fov = 90.;
-
-    // ro = vec3(1.0 * cos(beatTau / 128.), -4., 1.0 * sin(beatTau / 128.));
-    ro = vec3(4, -6., 1.);
-    ro = vec3(7. * cos(beatTau / 128.), -6., 7. * sin(beatTau / 128.));
 
 #ifdef DEBUG_CAMERA
     if (gCameraDebug > 0.) {
@@ -325,7 +241,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     vec3 bufa = texture(iChannel0, uv).xyz;
 
     // fade out
-    scol = mix(scol, vec3(0), smoothstep(316., 320., beat));
+    // scol = mix(scol, vec3(0), smoothstep(316., 320., beat));
     fragColor = saturate(vec4(0.7 * scol + 0.7 * bufa, 1.));
 #endif
 }
