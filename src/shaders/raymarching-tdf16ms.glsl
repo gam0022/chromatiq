@@ -135,9 +135,6 @@ vec4 map(vec3 pos, bool isFull) {
     float power = (beat >= 32. && beat < 64.) ? 100.0 : 1.0;
     float emi = 1.2 * pow(saturate(cos((beatTau - pos.y * 2.) / 8.)), power);
     float hue = fract(beat / 16.);
-    // hue = fract(pos.z / 2.);
-    // hue = fract(pos.y / 16.);
-    // hue = fract(beat * 0.01);
 
     vec3 size = vec3(4, 0.1, 4);
     opUnion(m, sdBox(p1, size) + voronoi(p1.xz), SOL, roughness, 0.);
@@ -221,13 +218,13 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         fov = 38.;
     }
     else TL(32.) {
-        vec3 a = vec3(0, 0., 0.01) * t;
+        vec3 a = vec3(0, 0, 0.01) * t;
         ro = vec3(0., 11.945982556636304, 38.08763743207477) + a;
         target = vec3(0, 0, 0) + a;
         fov = 38.;
     }
     else TL(64.) {
-        vec3 a = vec3(0, 0., 0.2) * t;
+        vec3 a = vec3(0, 0, 0.2) * t;
         ro = vec3(0, 9.715572757794958e-16, 15.866734416093387) + a;
         target = vec3(0, 0, 0) + a;
         fov = 38. + t;
@@ -239,7 +236,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         fov = 38.;
     }
     else TL(96.) {
-        vec3 a = vec3(0, -1.0, 0.01) * t;
+        vec3 a = vec3(0, -1, 0.01) * t;
         ro = vec3(0., -63.37835217641502, -0.414008392856417) + a;
         target = vec3(0, 0, 0) + a;
         fov = 38.;
