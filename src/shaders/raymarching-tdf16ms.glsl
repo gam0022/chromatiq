@@ -47,7 +47,6 @@ vec3 ro, target;
 float fov;
 vec3 scol;
 float beat, beatTau, beatPhase;
-vec3 boxPos;
 
 // Timeline
 float prevEndTime = 0., t = 0.;
@@ -86,7 +85,7 @@ float voronoi(vec2 uv) {
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
             vec2 n = vec2(x, y);
-            vec2 np = 0.5 + 0.5 * sin(beatPhase * TAU / 4. + TAU * hash22(i + n));
+            vec2 np = 0.5 + 0.5 * sin((beatPhase / 4. + hash22(i + n)) * TAU);
             vec2 p = n + np - f;
 
             // マンハッタン距離
@@ -119,25 +118,35 @@ vec4 map(vec3 pos, bool isFull) {
     float roughness = 0.05;
 
     vec3 p1 = pos;
-    p1.xz = opRep(p1.xz, vec2(8.));
-    p1.y += sin(pos.x / 4. + pos.z / 4. + beatTau / 8.);
 
-    float emi = 1.8 * abs(cos((beatTau - pos.z * 2.) / 8.));
+    int _IFS_Iteration = 3;
+    vec3 _IFS_Rot = vec3(0, 0.15, -0.25);
+    vec3 _IFS_Offset = vec3(3, 4, 12);
+
+    p1 -= _IFS_Offset.xyz;
+
+    for (int i = 0; i < _IFS_Iteration; i++) {
+        p1 = abs(p1 + _IFS_Offset.xyz) - _IFS_Offset.xyz;
+        rot(p1.xz, TAU * _IFS_Rot.x);
+        rot(p1.zy, TAU * _IFS_Rot.y);
+        rot(p1.xy, TAU * _IFS_Rot.z);
+    }
+
+    float power = (beat >= 32. && beat < 64.) ? 100.0 : 1.0;
+    float emi = 1.2 * pow(saturate(cos((beatTau - pos.y * 2.) / 8.)), power);
     float hue = fract(beat / 16.);
-    if (beat > 16.) hue += fract(pos.z / 8.);
+    // hue = fract(pos.z / 2.);
+    // hue = fract(pos.y / 16.);
+    // hue = fract(beat * 0.01);
 
-    vec3 size = vec3(4, 0.5, 4);
-    opUnion(m, sdBox(p1, size) + voronoi(pos.xz), SOL, roughness, hue);
+    vec3 size = vec3(4, 0.1, 4);
+    opUnion(m, sdBox(p1, size) + voronoi(p1.xz), SOL, roughness, 0.);
     opUnion(m, sdBox(p1 - vec3(0, -0.2, 0), size), SOL, roughness + emi, hue);
 
     // wall
-    if (isFull) {
-        float id = floor((abs(pos.x) - 2.) / 4.);
-        emi = step(0.8, cos(TAU * pos.x * 0.5));
-        hue = 10.;
-    }
-
-    opUnion(m, sdBox(p1 - vec3(0, 4, 0), size), SOL, 0.0 + emi * 2., hue);
+    emi = pow(saturate(cos(TAU * p1.x * 0.5)), 50.) * saturate(cos((beatTau - pos.y * 2.) / 8.));
+    hue = 3.4;
+    opUnion(m, sdBox(p1 - vec3(0, 4, 0), size), SOL, emi * 2., hue);
 
     return m;
 }
@@ -155,17 +164,17 @@ void madtracer(vec3 ro1, vec3 rd1, float seed) {
     float t = rand.x, t2 = rand.y;
     vec4 m1, m2;
     vec3 rd2, ro2, nor2;
-    for (int i = 0; i < 60; i++) {
+    for (int i = 0; i < 100; i++) {
         m1 = map(ro1 + rd1 * t, true);
         // t += m1.y == VOL ? 0.25 * abs(m1.x) + 0.0008 : 0.25 * m1.x;
-        t += 0.25 * mix(abs(m1.x) + 0.0032, m1.x, m1.y);
+        t += 0.5 * mix(abs(m1.x) + 0.0032, m1.x, m1.y);
         ro2 = ro1 + rd1 * t;
         nor2 = normal(ro2);
         rd2 = mix(reflect(rd1, nor2), hashHs(nor2, vec3(seed, i, iTime)), saturate(m1.z));
         m2 = map(ro2 + rd2 * t2, true);
         // t2 += m2.y == VOL ? 0.15 * abs(m2.x) : 0.15 * m2.x;
-        t2 += 0.04 * mix(abs(m2.x), m2.x, m2.y);
-        scol += .015 * (pal(m2) * max(0., m2.z - 1.) + pal(m1) * max(0., m1.z - 1.));
+        t2 += 0.25 * mix(abs(m2.x), m2.x, m2.y);
+        scol += .15 * (pal(m2) * max(0., m2.z - 1.) + pal(m1) * max(0., m1.z - 1.));
 
         // force disable unroll for WebGL 1.0
         if (t < -1.) break;
@@ -193,31 +202,50 @@ void raymarching(vec3 ro1, vec3 rd1) {
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
     beat = iTime * BPM / 60.0;
+    // beat = 16.;
+    beat = mod(beat, 96.0);
     beatTau = beat * TAU;
     beatPhase = phase(beat / 2.);
 
     vec2 uv = fragCoord.xy / iResolution.xy;
 
-    boxPos = vec3(0, -6, 0);
-    // boxPos.y = mix(-12., 0., smoothstep(20., 48., beat));
-    // boxPos.y = mix(boxPos.y, -12., smoothstep(304., 320., beat));
-
     // Camera
     vec2 noise = hash23(vec3(iTime, fragCoord)) - .5;  // AA
     vec2 uv2 = (2. * (fragCoord.xy + noise) - iResolution.xy) / iResolution.x;
 
-    // 通常時カメラ
-    float dice = hash11(floor(beat / 8. + 2.) * 123.);
-    if (dice < .8) {
-        ro = vec3(10, 2. + 0.1 * sin(beatTau / 8.), beat * 0.1);
-        target = ro + vec3(0, -1., 1. + sin(beatTau / 16.));
-    } else {
-        ro = vec3(10, 1.5, beat * 0.7);
-        target = ro + vec3(0, -0.05, 1);
+    // Timeline
+    TL(16.) {
+        vec3 a = vec3(0, 0.1, 0.01) * t;
+        ro = vec3(3.685370226301841, -4.959968195098165, -20.681291773889914) + a;
+        target = vec3(0, 0, 0) + a;
+        fov = 38.;
+    }
+    else TL(32.) {
+        vec3 a = vec3(0, 0., 0.01) * t;
+        ro = vec3(0., 11.945982556636304, 38.08763743207477) + a;
+        target = vec3(0, 0, 0) + a;
+        fov = 38.;
+    }
+    else TL(64.) {
+        vec3 a = vec3(0, 0., 0.2) * t;
+        ro = vec3(0, 9.715572757794958e-16, 15.866734416093387) + a;
+        target = vec3(0, 0, 0) + a;
+        fov = 38. + t;
+    }
+    else TL(80.) {
+        vec3 a = vec3(0, 0.1, 0.01) * t;
+        ro = vec3(-1.3462260362305196, -8.261048814107882, -28.966739530232058) + a;
+        target = vec3(1.593920748030086, -0.030320796976565673, -0.9344052773004179) + a;
+        fov = 38.;
+    }
+    else TL(96.) {
+        vec3 a = vec3(0, -1.0, 0.01) * t;
+        ro = vec3(0., -63.37835217641502, -0.414008392856417) + a;
+        target = vec3(0, 0, 0) + a;
+        fov = 38.;
     }
 
-    fov = 90.;
-
+#define DEBUG_CAMERA
 #ifdef DEBUG_CAMERA
     if (gCameraDebug > 0.) {
         ro = vec3(gCameraEyeX, gCameraEyeY, gCameraEyeZ);
@@ -241,7 +269,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     vec3 bufa = texture(iChannel0, uv).xyz;
 
     // fade out
-    // scol = mix(scol, vec3(0), smoothstep(316., 320., beat));
+    // scol = mix(scol, vec3(0), smoothstep(92., 96., beat));
     fragColor = saturate(vec4(0.7 * scol + 0.7 * bufa, 1.));
 #endif
 }

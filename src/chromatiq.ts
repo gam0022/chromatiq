@@ -623,7 +623,7 @@ export class Chromatiq {
           }
         }
 
-        if (this.isPlaying || this.needsUpdate || true) {
+        if (this.isPlaying || this.needsUpdate) {
           if (this.onRender != null) {
             this.onRender(this.time, timeDelta);
           }
