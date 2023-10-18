@@ -18,6 +18,7 @@ window.addEventListener(
 
     // config
     const config = {
+      forceRender: false,
       debugCamera: false,
       debugParams: false,
       debugDisableReset: false,
@@ -127,7 +128,7 @@ window.addEventListener(
     document.body.appendChild(stats.dom);
 
     // dat.GUI
-    const gui = new GUI( { width: 400 } );
+    const gui = new GUI({ width: 400 });
     //gui.useLocalStorage = true;
 
     const debugFolder = gui.addFolder("debug");
@@ -151,6 +152,7 @@ window.addEventListener(
     });
 
     const miscFolder = gui.addFolder("misc");
+    miscFolder.add(config, "forceRender");
     miscFolder.add(config, "resolution", ["0.5", "0.75", "1.0", "3840x2160", "2560x1440", "1920x1080", "1600x900", "1280x720", "512x512", "2048x2048", "2560x1280"]).onChange(() => {
       onResolutionCange();
     });
@@ -304,6 +306,7 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
     // SessionStorage
     const saveToSessionStorage = (): void => {
       sessionStorage.setItem("gui", JSON.stringify(gui.save()));
+      sessionStorage.setItem("forceRender", config.forceRender.toString());
       sessionStorage.setItem("debugCamera", config.debugCamera.toString());
       sessionStorage.setItem("debugParams", config.debugParams.toString());
       sessionStorage.setItem("debugDisableReset", config.debugDisableReset.toString());
@@ -338,6 +341,11 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
         config.resolution = resolutionStr;
       }
       onResolutionCange();
+
+      const forceRenderStr = sessionStorage.getItem("forceRender");
+      if (forceRenderStr) {
+        config.forceRender = parseBool(forceRenderStr);
+      }
 
       const debugCameraStr = sessionStorage.getItem("debugCamera");
       if (debugCameraStr) {
@@ -468,7 +476,7 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
           chromatiq.uniforms.gCameraTargetX = controls.target.x;
           chromatiq.uniforms.gCameraTargetY = controls.target.y;
           chromatiq.uniforms.gCameraTargetZ = controls.target.z;
-          chromatiq.uniforms.gCameraDebug = config.debugCamera ? 1: 0;
+          chromatiq.uniforms.gCameraDebug = config.debugCamera ? 1 : 0;
 
           // gui.updateDisplay();
           chromatiq.needsUpdate = true;
@@ -476,6 +484,10 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
 
         prevCameraPosotion.copy(camera.position);
         prevCameraTarget.copy(controls.target);
+      }
+
+      if (config.forceRender) {
+        chromatiq.needsUpdate = true;
       }
     };
 

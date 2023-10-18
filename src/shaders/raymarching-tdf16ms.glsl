@@ -199,7 +199,7 @@ void raymarching(vec3 ro1, vec3 rd1) {
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
     beat = iTime * BPM / 60.0;
-    // beat = 16.;
+    // beat = 86.;
     beat = mod(beat, 96.0);
     beatTau = beat * TAU;
     beatPhase = phase(beat / 2.);
@@ -242,7 +242,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         fov = 38.;
     }
 
-#define DEBUG_CAMERA
+// #define DEBUG_CAMERA
 #ifdef DEBUG_CAMERA
     if (gCameraDebug > 0.) {
         ro = vec3(gCameraEyeX, gCameraEyeY, gCameraEyeZ);
