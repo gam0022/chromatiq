@@ -157,7 +157,7 @@ vec3 normal(vec3 p) {
 // https://www.shadertoy.com/view/Xt3cWS
 void madtracer(vec3 ro1, vec3 rd1, float seed) {
     scol = vec3(0);
-    vec2 rand = hash23(vec3(seed, iTime, iTime)) * .5;
+    vec2 rand = hash23(vec3(seed, iFrame, iFrame)) * .5;
     float t = rand.x, t2 = rand.y;
     vec4 m1, m2;
     vec3 rd2, ro2, nor2;
@@ -167,7 +167,7 @@ void madtracer(vec3 ro1, vec3 rd1, float seed) {
         t += 0.5 * mix(abs(m1.x) + 0.0032, m1.x, m1.y);
         ro2 = ro1 + rd1 * t;
         nor2 = normal(ro2);
-        rd2 = mix(reflect(rd1, nor2), hashHs(nor2, vec3(seed, i, iTime)), saturate(m1.z));
+        rd2 = mix(reflect(rd1, nor2), hashHs(nor2, vec3(seed, i, iFrame)), saturate(m1.z));
         m2 = map(ro2 + rd2 * t2, true);
         // t2 += m2.y == VOL ? 0.15 * abs(m2.x) : 0.15 * m2.x;
         t2 += 0.25 * mix(abs(m2.x), m2.x, m2.y);
@@ -199,7 +199,6 @@ void raymarching(vec3 ro1, vec3 rd1) {
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
     beat = iTime * BPM / 60.0;
-    // beat = 86.;
     beat = mod(beat, 96.0);
     beatTau = beat * TAU;
     beatPhase = phase(beat / 2.);
@@ -207,7 +206,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     vec2 uv = fragCoord.xy / iResolution.xy;
 
     // Camera
-    vec2 noise = hash23(vec3(iTime, fragCoord)) - .5;  // AA
+    vec2 noise = hash23(vec3(iFrame, fragCoord)) - .5;  // AA
     vec2 uv2 = (2. * (fragCoord.xy + noise) - iResolution.xy) / iResolution.x;
 
     // Timeline

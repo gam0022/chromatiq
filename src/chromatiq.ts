@@ -42,6 +42,9 @@ export class Chromatiq {
   /** 再生時間（秒）です */
   time: number;
 
+  /** フレーム数です */
+  frame: number;
+
   /** レンダリングの直前に実行されるコールバック関数です。ポーズ中（isPlaying = false）は実行されません */
   onRender: (time: number, timeDelta: number) => void;
 
@@ -100,6 +103,7 @@ export class Chromatiq {
       this.isPlaying = true;
       this.needsUpdate = false;
       this.time = 0;
+      this.frame = 0;
       this.debugFrameNumber = -1;
 
       if (GLOBAL_UNIFORMS) {
@@ -296,6 +300,7 @@ export class Chromatiq {
             value: [canvas.width * pass.scale, canvas.height * pass.scale, 0],
           },
           iTime: { type: "f", value: 0.0 },
+          iFrame: { type: "f", value: 0.0 },
           iPrevPass: { type: "t", value: Math.max(pass.index - 1, 0) },
           iChannel0: { type: "t", value: pass.index },
           iBeforeBloom: {
@@ -488,6 +493,7 @@ export class Chromatiq {
       this.render = (): void => {
         imagePasses.forEach((pass) => {
           pass.uniforms.iTime.value = this.time;
+          pass.uniforms.iFrame.value = this.frame;
           if (GLOBAL_UNIFORMS) {
             for (const [key, value] of Object.entries(this.uniforms)) {
               if (pass.uniforms[key] !== undefined) {
@@ -641,6 +647,8 @@ export class Chromatiq {
               this.time += timeDelta;
             }
           }
+
+          this.frame++;
         }
 
         this.needsUpdate = false;
