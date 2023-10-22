@@ -119,6 +119,9 @@ vec4 map(vec3 pos, bool isFull) {
 
     vec3 p1 = pos;
 
+    // p1.xz -= vec2(20.);
+    // p1.xz = opRep(p1.xz, vec2(40.));
+
     int _IFS_Iteration = 3;
     vec3 _IFS_Rot = vec3(0, 0.15, -0.25);
     vec3 _IFS_Offset = vec3(3, 4, 12);
@@ -199,7 +202,7 @@ void raymarching(vec3 ro1, vec3 rd1) {
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
     beat = iTime * BPM / 60.0;
-    beat = mod(beat, 96.0);
+    beat = mod(beat, 120.0);
     beatTau = beat * TAU;
     beatPhase = phase(beat / 2.);
 
@@ -217,7 +220,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         fov = 38.;
     }
     else TL(32.) {
-        vec3 a = vec3(0, 0, 0.01) * t;
+        vec3 a = vec3(0, 0.1, 0.01) * t;
         ro = vec3(0., 11.945982556636304, 38.08763743207477) + a;
         target = vec3(0, 0, 0) + a;
         fov = 38.;
@@ -234,7 +237,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         target = vec3(1.593920748030086, -0.030320796976565673, -0.9344052773004179) + a;
         fov = 38.;
     }
-    else TL(96.) {
+    else TL(120.) {
         vec3 a = vec3(0, -1, 0.01) * t;
         ro = vec3(0., -63.37835217641502, -0.414008392856417) + a;
         target = vec3(0, 0, 0) + a;
@@ -265,7 +268,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     vec3 bufa = texture(iChannel0, uv).xyz;
 
     // fade out
-    // scol = mix(scol, vec3(0), smoothstep(92., 96., beat));
+    scol = mix(scol, vec3(0), smoothstep(116., 120., beat));
     fragColor = saturate(vec4(0.7 * scol + 0.7 * bufa, 1.));
 #endif
 }
