@@ -184,12 +184,13 @@ window.addEventListener(
         playPauseButton.value = playChar;
 
         const fps = 60;
-        let frame = 0;
+        let frame = 0; // 途中からレンダリングする場合はここを書き換える
         const update = (): void => {
           const time = frame / fps;
           timeBar.valueAsNumber = time;
           timeInput.valueAsNumber = time;
           chromatiq.time = time;
+          chromatiq.frame = frame;
 
           animateUniforms(time, config.debugCamera, config.debugDisableReset);
           chromatiq.render();

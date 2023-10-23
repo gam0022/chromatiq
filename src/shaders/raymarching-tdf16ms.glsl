@@ -119,12 +119,16 @@ vec4 map(vec3 pos, bool isFull) {
 
     vec3 p1 = pos;
 
-    // p1.xz -= vec2(20.);
-    // p1.xz = opRep(p1.xz, vec2(40.));
-
     int _IFS_Iteration = 3;
     vec3 _IFS_Rot = vec3(0, 0.15, -0.25);
     vec3 _IFS_Offset = vec3(3, 4, 12);
+
+    if (beat > 96.) {
+        p1.xz -= vec2(15.);
+        p1.xz = opRep(p1.xz, vec2(30.));
+        _IFS_Rot = vec3(0, 0.15, -0.25);
+        _IFS_Offset = vec3(3, 6, 6);
+    }
 
     p1 -= _IFS_Offset.xyz;
 
@@ -237,11 +241,17 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
         target = vec3(1.593920748030086, -0.030320796976565673, -0.9344052773004179) + a;
         fov = 38.;
     }
-    else TL(120.) {
+    else TL(96.) {
         vec3 a = vec3(0, -1, 0.01) * t;
-        ro = vec3(0., -63.37835217641502, -0.414008392856417) + a;
+        ro = vec3(0., -60, -0.414008392856417) + a;
         target = vec3(0, 0, 0) + a;
         fov = 38.;
+    }
+    else TL(112.) {
+        vec3 a = vec3(0, -1, 0.01) * t;
+        ro = vec3(0., -69, -0.414008392856417) + a;
+        target = vec3(0, 0, 0) + a;
+        fov = 40.;
     }
 
 // #define DEBUG_CAMERA
@@ -268,7 +278,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     vec3 bufa = texture(iChannel0, uv).xyz;
 
     // fade out
-    scol = mix(scol, vec3(0), smoothstep(116., 120., beat));
+    scol = mix(scol, vec3(0), smoothstep(108., 112., beat));
     fragColor = saturate(vec4(0.7 * scol + 0.7 * bufa, 1.));
 #endif
 }

@@ -6,7 +6,7 @@ declare const PRODUCTION: boolean;
 
 export const bpm = 120;  // BPM
 export const chromatiq = new Chromatiq(
-  160, // デモの長さ（秒）
+  56, // デモの長さ（秒）
   require("./shaders/build-in/vertex.glsl").default,
 
   // Image Shaders
