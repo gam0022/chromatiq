@@ -1,6 +1,6 @@
 # Projects
 
-## Project4: TDF16ms #0 2023: Infinite Keys
+## Project4: TDF 16ms #0 (2023): Infinite Keys
 
 3rd place at GLSL Graphics Compo in [TDF 16ms](https://16ms.tokyodemofest.jp/) #0 (2023) :3rd_place_medal:
 
