@@ -6,14 +6,14 @@ declare const PRODUCTION: boolean;
 
 export const bpm = 120;  // BPM
 export const chromatiq = new Chromatiq(
-  160, // デモの長さ（秒）
+  56, // デモの長さ（秒）
   require("./shaders/build-in/vertex.glsl").default,
 
   // Image Shaders
   require("./shaders/common-header.glsl").default,
   [
     // require("./shaders/raymarching-mandel.glsl").default,
-    require("./shaders/raymarching-sessions2023.glsl").default,
+    require("./shaders/raymarching-tdf16ms.glsl").default,
     require("./shaders/post-effect.glsl").default,
     // require("./shaders/effects/debug-circle.glsl").default,
   ],
