@@ -1,6 +1,6 @@
-import { chromatiq, animateUniforms, bpm } from "./index.common";
+import { chromatiq, animateUniforms, initBpm } from "./index.common";
 
-import GUI from 'lil-gui';
+import { FolderApi, Pane } from 'tweakpane';
 import { saveAs } from "file-saver";
 import { bufferToWave } from "./buffer-to-wave";
 
@@ -14,6 +14,11 @@ window.addEventListener(
   "load",
   () => {
     chromatiq.init();
+
+    // CSS用のスタイルを追加
+    chromatiq.canvas.setAttribute("id", "setAttribute");
+
+    // play
     chromatiq.play();
 
     // config
@@ -23,8 +28,8 @@ window.addEventListener(
       debugParams: false,
       debugDisableReset: false,
       resolution: "1920x1080",
-      timeMode: "beat",
-      bpm: bpm,
+      timeMode: "time",
+      bpm: initBpm,
     };
 
     // HTMLElements
@@ -128,12 +133,15 @@ window.addEventListener(
     document.body.appendChild(stats.dom);
 
     // dat.GUI
-    const gui = new GUI({ width: 400 });
+    // const gui = new GUI({ width: 400 });
+    const pane = new Pane({
+      title: 'Parameters',
+    });
     //gui.useLocalStorage = true;
 
-    const debugFolder = gui.addFolder("debug");
-    debugFolder.add(config, "debugCamera").listen().onChange((value: boolean) => {
-      if (value) {
+    const debugFolder = pane.addFolder({ title: "debug" });
+    debugFolder.addBinding(config, "debugCamera").on("change", ev => {
+      if (ev.value) {
         camera.position.x = chromatiq.uniforms.gCameraEyeX;
         camera.position.y = chromatiq.uniforms.gCameraEyeY;
         camera.position.z = chromatiq.uniforms.gCameraEyeZ;
@@ -144,31 +152,42 @@ window.addEventListener(
 
       chromatiq.needsUpdate = true;
     });
-    debugFolder.add(config, "debugParams").onChange(() => {
+    debugFolder.addBinding(config, "debugParams").on("change", () => {
       chromatiq.needsUpdate = true;
     });
-    debugFolder.add(config, "debugDisableReset").onChange(() => {
+    debugFolder.addBinding(config, "debugDisableReset").on("change", () => {
       chromatiq.needsUpdate = true;
     });
 
-    const miscFolder = gui.addFolder("misc");
-    miscFolder.add(config, "forceRender");
-    miscFolder.add(config, "resolution", ["0.5", "0.75", "1.0", "3840x2160", "2560x1440", "1920x1080", "1600x900", "1280x720", "512x512", "2160x2160", "2560x1280"]).onChange(() => {
+    const arrayToKeyValueMap = (array: string[]) => {
+      return array.reduce((acc: { [key: string]: string }, current) => {
+        acc[current] = current;
+        return acc;
+      }, {});
+    };
+
+    const miscFolder = pane.addFolder({ title: "misc" });
+    miscFolder.addBinding(config, "forceRender");
+    miscFolder.addBinding(config, "resolution", {
+      options: arrayToKeyValueMap(["0.5", "0.75", "1.0", "3840x2160", "2560x1440", "1920x1080", "1600x900", "1280x720", "512x512", "2160x2160", "2560x1280", "800x600"])
+    }).on("change", () => {
       onResolutionCange();
     });
-    miscFolder.add(config, "timeMode", ["time", "beat"]).onChange(() => {
+    miscFolder.addBinding(config, "timeMode", {
+      options: arrayToKeyValueMap(["time", "beat"])
+    }).on("change", () => {
       onTimeModeChange();
     });
-    miscFolder.add(config, "bpm", 50, 300).listen().onChange(() => {
+    miscFolder.addBinding(config, "bpm", { min: 50, max: 300, step: 1 }).on("change", () => {
       beatLengthInput.valueAsNumber = timeToBeat(timeLengthInput.valueAsNumber);
       onBeatLengthUpdate();
     });
     // NOTE: 使用頻度が低いのでmisc送りに
-    miscFolder.add(chromatiq, "debugFrameNumber", -1, 30, 1).onChange(() => {
+    miscFolder.addBinding(chromatiq, "debugFrameNumber", { min: -1, max: 30, step: 1 }).on("change", () => {
       chromatiq.needsUpdate = true;
     });
 
-    const saevFunctions = {
+    const saveFunctions = {
       saveImage: (): void => {
         chromatiq.canvas.toBlob((blob) => {
           saveAs(blob, "chromatiq.png");
@@ -215,7 +234,7 @@ window.addEventListener(
         saveAs(waveBlob, "chromatiq.wav");
       },
       copyCamera: (): void => {
-        const text = `camera = new Vector3(${camera.position.x}, ${camera.position.y}, ${camera.position.z}).add(Vector3.fbm(t).scale(0.01));
+        const text = `camera = new Vector3(${camera.position.x}, ${camera.position.y}, ${camera.position.z}).add(Vector3.fbm(t).scale(0.001));
 target = new Vector3(${controls.target.x}, ${controls.target.y}, ${controls.target.z});
 chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
         navigator.clipboard.writeText(text).then(
@@ -228,7 +247,7 @@ chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
         );
       },
       copyCamera2: (): void => {
-        const text = `camera = new Vector3(${camera.position.x}, ${camera.position.y}, ${camera.position.z}).add(Vector3.fbm(t).scale(0.01));
+        const text = `camera = new Vector3(${camera.position.x}, ${camera.position.y}, ${camera.position.z}).add(Vector3.fbm(t).scale(0.001));
 target = new Vector3(${controls.target.x - camera.position.x}, ${controls.target.y - camera.position.y}, ${controls.target.z - camera.position.z}).add(camera);
 chromatiq.uniforms.gCameraFov = ${chromatiq.uniforms.gCameraFov};`;
         navigator.clipboard.writeText(text).then(
@@ -254,43 +273,54 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
         );
       },
     };
-    debugFolder.add(saevFunctions, "copyCamera");
-    debugFolder.add(saevFunctions, "copyCamera2");
-    debugFolder.add(saevFunctions, "copyCameraGLSL");
-    miscFolder.add(saevFunctions, "saveImage");
-    miscFolder.add(saevFunctions, "saveImageSequence");
-    miscFolder.add(saevFunctions, "saveSound");
 
-    const groupFolders: { [index: string]: GUI } = {};
+    debugFolder.addButton({ title: "copyCamera" }).on("click", saveFunctions.copyCamera);
+    debugFolder.addButton({ title: "copyCamera2" }).on("click", saveFunctions.copyCamera2);
+    debugFolder.addButton({ title: "copyCameraGLSL" }).on("click", saveFunctions.copyCameraGLSL);
+    debugFolder.addButton({ title: "saveImage" }).on("click", saveFunctions.saveImage);
+    debugFolder.addButton({ title: "saveImageSequence" }).on("click", saveFunctions.saveImageSequence);
+    debugFolder.addButton({ title: "saveSound" }).on("click", saveFunctions.saveSound);
+
+    const defaultFolders: { [index: string]: FolderApi } = {};
+    defaultFolders["debug"] = debugFolder;
+    defaultFolders["misc"] = miscFolder;
+
+    const groupFolders: { [index: string]: FolderApi } = {};
 
     chromatiq.uniformArray.forEach((unifrom) => {
       let groupFolder = groupFolders[unifrom.group];
       if (!groupFolder) {
-        groupFolder = gui.addFolder(unifrom.group);
+        groupFolder = pane.addFolder({ title: unifrom.group });
         groupFolders[unifrom.group] = groupFolder;
       }
 
       if (typeof unifrom.initValue === "number") {
-        groupFolder.add(chromatiq.uniforms, unifrom.key, unifrom.min, unifrom.max).listen().onChange((value: number) => {
+        let option: any = {};
+
+        if (unifrom.min != -1 || unifrom.max != -1) {
+          option = { min: unifrom.min, max: unifrom.max };
+        }
+
+        groupFolder.addBinding(chromatiq.uniforms, unifrom.key, option).on("change", ev => {
           if (config.debugCamera) {
             switch (unifrom.key) {
               case "gCameraEyeX":
-                camera.position.x = value;
+                camera.position.x = ev.value;
                 break;
               case "gCameraEyeY":
-                camera.position.y = value;
+                camera.position.y = ev.value;
                 break;
               case "gCameraEyeZ":
-                camera.position.z = value;
+                camera.position.z = ev.value;
                 break;
               case "gCameraTargetX":
-                controls.target.x = value;
+                controls.target.x = ev.value;
                 break;
               case "gCameraTargetY":
-                controls.target.y = value;
+                controls.target.y = ev.value;
                 break;
               case "gCameraTargetZ":
-                controls.target.z = value;
+                controls.target.z = ev.value;
                 break;
             }
           }
@@ -298,7 +328,13 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
           chromatiq.needsUpdate = true;
         });
       } else {
-        groupFolder.addColor(chromatiq.uniforms, unifrom.key).listen().onChange(() => {
+        let option: any = {};
+
+        if (typeof unifrom.initValue === "object" && "r" in unifrom.initValue) {
+          option.color = { type: 'float' };
+        }
+
+        groupFolder.addBinding(chromatiq.uniforms, unifrom.key, option).on("change", () => {
           chromatiq.needsUpdate = true;
         });
       }
@@ -306,7 +342,7 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
 
     // SessionStorage
     const saveToSessionStorage = (): void => {
-      sessionStorage.setItem("gui", JSON.stringify(gui.save()));
+      sessionStorage.setItem("gui", JSON.stringify(pane.exportState()));
       sessionStorage.setItem("forceRender", config.forceRender.toString());
       sessionStorage.setItem("debugCamera", config.debugCamera.toString());
       sessionStorage.setItem("debugParams", config.debugParams.toString());
@@ -320,10 +356,18 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
       sessionStorage.setItem("isPlaying", chromatiq.isPlaying.toString());
       sessionStorage.setItem("timeLength", timeLengthInput.value);
 
-      sessionStorage.setItem("guiClosed", gui._closed.toString());
-
       for (const [key, uniform] of Object.entries(chromatiq.uniforms)) {
-        sessionStorage.setItem(key, uniform.toString());
+        sessionStorage.setItem(key, JSON.stringify(uniform));
+      }
+
+      sessionStorage.setItem("paneExpanded", pane.expanded.toString());
+
+      for (const [key, folder] of Object.entries(defaultFolders)) {
+        sessionStorage.setItem("folderExpanded_" + key, folder.expanded.toString());
+      }
+
+      for (const [key, folder] of Object.entries(groupFolders)) {
+        sessionStorage.setItem("folderExpanded_" + key, folder.expanded.toString());
       }
     };
 
@@ -334,7 +378,7 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
 
       const guiStr = sessionStorage.getItem("gui");
       if (guiStr) {
-        gui.load(JSON.parse(guiStr));
+        // pane.importState(JSON.parse(guiStr));
       }
 
       const resolutionStr = sessionStorage.getItem("resolution");
@@ -401,22 +445,24 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
       onTimeLengthUpdate();
       onBeatLengthUpdate();
 
-      const guiClosedStr = sessionStorage.getItem("guiClosed");
-      if (guiClosedStr) {
-        // gui.open(parseBool(guiClosedStr));
-        gui.close();
-      }
-
       for (const [key] of Object.entries(chromatiq.uniforms)) {
         const unifromStr = sessionStorage.getItem(key);
         if (unifromStr) {
-          const ary = unifromStr.split(",");
-          if (ary.length === 3) {
-            chromatiq.uniforms[key] = ary.map((s) => parseFloat(s));
-          } else if (ary.length === 1) {
-            chromatiq.uniforms[key] = parseFloat(unifromStr);
-          }
+          chromatiq.uniforms[key] = JSON.parse(unifromStr);
         }
+      }
+
+      const paneExpandedStr = sessionStorage.getItem("paneExpanded");
+      if (paneExpandedStr) {
+        pane.expanded = parseBool(paneExpandedStr);
+      }
+
+      for (const [key, folder] of Object.entries(defaultFolders)) {
+        folder.expanded = parseBool(sessionStorage.getItem("folderExpanded_" + key));
+      }
+
+      for (const [key, folder] of Object.entries(groupFolders)) {
+        folder.expanded = parseBool(sessionStorage.getItem("folderExpanded_" + key));
       }
     };
 
@@ -463,7 +509,7 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
     chromatiq.onPostRender = (): void => {
       stats.end();
       stats.update();
-      // gui.updateDisplay();
+      pane.refresh();
     };
 
     chromatiq.onUpdate = (): void => {
@@ -479,7 +525,7 @@ fov = ${chromatiq.uniforms.gCameraFov};`;
           chromatiq.uniforms.gCameraTargetZ = controls.target.z;
           chromatiq.uniforms.gCameraDebug = config.debugCamera ? 1 : 0;
 
-          // gui.updateDisplay();
+          pane.refresh();
           chromatiq.needsUpdate = true;
         }
 
