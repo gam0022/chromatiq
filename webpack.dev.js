@@ -19,7 +19,7 @@ module.exports = merge(common, {
     plugins: [new webpack.DefinePlugin({
         PRODUCTION: JSON.stringify(false),
         GLOBAL_UNIFORMS: JSON.stringify(true),
-        PLAY_SOUND_FILE: JSON.stringify('230502_demo.wav'),
+        PLAY_SOUND_FILE: JSON.stringify('guardian.mp3'),
         // PLAY_SOUND_FILE: JSON.stringify(false),
     })],
 });

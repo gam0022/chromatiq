@@ -17,7 +17,7 @@
             color: skyblue
         }
 
-        canvas {
+        canvas#chromatiq {
             display: block;
             position: absolute;
             top: 0;
@@ -25,6 +25,15 @@
             right: auto;
             bottom: 0;
             margin: auto;
+        }
+
+        /* https://github.com/cocopon/tweakpane/issues/46#issuecomment-633388907 */
+        .tp-dfwv {
+            min-width: 400px;
+        }
+
+        .tp-lblv_v {
+            min-width: 220px;
         }
 
         #info {

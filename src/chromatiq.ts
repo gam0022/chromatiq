@@ -194,6 +194,8 @@ export class Chromatiq {
 
       const imageCommonHeaderShaderLineCount = imageCommonHeaderShader.split("\n").length;
 
+      const convertColor = (srcColor: any) => typeof srcColor === "object" && "r" in srcColor ? [srcColor.r, srcColor.g, srcColor.b] : srcColor;
+
       const loadShader = (src: string, type: number): WebGLShader => {
         const shader = gl.createShader(type);
         gl.shaderSource(shader, src);
@@ -325,7 +327,7 @@ export class Chromatiq {
           this.uniformArray.forEach((unifrom) => {
             pass.uniforms[unifrom.key] = {
               type: typeof unifrom.initValue === "number" ? "f" : "v3",
-              value: unifrom.initValue,
+              value: convertColor(unifrom.initValue),
             };
           });
         }
@@ -486,7 +488,9 @@ export class Chromatiq {
           this.audioSource.buffer = audioBuffer;
         }
 
-        this.audioSource.loop = true;
+        // ループ再生はしない
+        // this.audioSource.loop = true;
+
         this.audioSource.connect(audio.destination);
       };
 
@@ -500,8 +504,8 @@ export class Chromatiq {
                 if (typeof value === "number") {
                   pass.uniforms[key].value = value;
                 } else {
-                  // NOTE: for dat.GUI addColor
-                  pass.uniforms[key].value = [value[0] / 255, value[1] / 255, value[2] / 255];
+                  // NOTE: for Tweakpane
+                  pass.uniforms[key].value = convertColor(value);
                 }
               }
             }
@@ -531,21 +535,22 @@ export class Chromatiq {
                 initValue: result[4] !== undefined ? parseFloat(result[4]) : 0,
               };
 
-              // get min / max for Debug dat.GUI
+              // get min / max for Debug Tweakpane
               if (!PRODUCTION) {
-                uniform.min = result[6] !== undefined ? parseFloat(result[6]) : 0;
-                uniform.max = result[7] !== undefined ? parseFloat(result[7]) : 1;
+                uniform.min = result[6] !== undefined ? parseFloat(result[6]) : -1;
+                uniform.max = result[7] !== undefined ? parseFloat(result[7]) : -1;
               }
             } else {
               uniform = {
                 key: result[2],
-                initValue: [parseFloat(result[4]), parseFloat(result[6]), parseFloat(result[7])],
+                // NOTE: for Debug Tweakpane
+                initValue: {r: parseFloat(result[4]), g: parseFloat(result[6]), b: parseFloat(result[7])},
               };
             }
 
             if (!PRODUCTION) {
               if (result[8] !== undefined) {
-                currentGroup = result[8];
+                currentGroup = result[8].trim();
               }
 
               uniform.group = currentGroup;
