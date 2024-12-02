@@ -10,7 +10,7 @@
 - [:bird: X/Twitter](https://x.com/gam0022/status/1858308509856678328)
 - [:earth_americas: Online version](https://gam0022.net/webgl/#demoscne_guardian)
 
-![sessions2024-guardian.jpg](sessions2024-guardian.jpg)
+![sessions2024-guardian.jpg](screenshots/sessions2024-guardian.jpg)
 
 ## Project4: TDF 16ms #0 (2023): Infinite Keys
 
