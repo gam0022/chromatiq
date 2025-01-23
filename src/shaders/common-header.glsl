@@ -217,6 +217,7 @@ float prevEndTime = 0., t = 0.;
 #define M_EXPLOSION 6.
 #define M_LAZER 7.
 #define M_NAME 8.
+#define M_FUJI_TV 9.
 
 #define opRepLim(p, s, l) p - s* clamp(round(p / s), -l, l)
 
