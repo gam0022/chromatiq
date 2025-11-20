@@ -280,6 +280,86 @@ vec4 mExplosion(vec3 p, vec4 m, float scale, float time, float mz) {
 
 uniform vec3 gDoorParam;  // 0.31 0.95 0.2
 
+vec3 opLimitedRepetition(vec3 p, in float s, vec3 l) { return p - s * clamp(round(p / s), -l, l); }
+
+float dMenger(vec3 z0, vec3 offset, float scale, int iteration) {
+    vec4 z = vec4(z0, 1.0);
+    for (int n = 0; n < iteration; n++) {
+        z = abs(z);
+
+        if (z.x < z.y) {
+            z.xy = z.yx;
+        }
+
+        if (z.x < z.z) {
+            z.xz = z.zx;
+        }
+
+        if (z.y < z.z) {
+            z.yz = z.zy;
+        }
+
+        z *= scale;
+        z.xyz -= offset * (scale - 1.0);
+
+        if (z.z < -0.5 * offset.z * (scale - 1.0)) {
+            z.z += offset.z * (scale - 1.0);
+        }
+    }
+
+    return (length(max(abs(z.xyz) - vec3(1.0, 1.0, 1.0), 0.0)) - 0.05) / z.w;
+}
+
+uniform float gFujiTV_PosY;  // 0.2
+
+vec4 mFujiTV(vec3 pos, vec4 m, float scale) {
+    pos = pos / scale - vec3(0, gFujiTV_PosY, 0);
+    vec3 p = pos;
+
+    int _IFS_Iteration = 3;
+
+    vec3 _Left_Offset = vec3(1.1, 1.57, 0.76);
+    float _Left_Scale = 2.12;
+    float _Left_Interval = 0.97;
+    vec3 _Left_Position = vec3(-4.65, 0.93, -0.03);
+
+    vec3 _Right_Offset = vec3(1.1, 1.57, 0.76);
+    float _Right_Scale = 2.12;
+    float _Right_Interval = 0.97;
+    vec3 _Right_Position = vec3(4.09, 0.93, -0.03);
+
+    vec3 _Center_Offset = vec3(1.01, 1.14, 0.45);
+    float _Center_Scale = 3.06;
+    float _Center_Interval = 1.07;
+    vec3 _Center_Position = vec3(0);
+
+    float _Sphere_Radius = 0.79;
+    vec3 _Sphere_Position = vec3(-1.46, 2.19, -1.81);
+
+    p = pos - _Left_Position;
+    p = opLimitedRepetition(p, _Left_Interval, vec3(1, 2, 1));
+    float d = dMenger(p, _Left_Offset, _Left_Scale, _IFS_Iteration);
+    opU(m, d * scale, M_FUJI_TV, 0.0, 0.0);
+
+    p = pos - _Right_Position;
+    p = opLimitedRepetition(p, _Right_Interval, vec3(1.5, 2, 1));
+    d = dMenger(p, _Right_Offset, _Right_Scale, _IFS_Iteration);
+    opU(m, d * scale, M_FUJI_TV, 0.0, 0.0);
+
+    p = pos - _Center_Position;
+    p = opLimitedRepetition(p, _Center_Interval, vec3(2, 1, 1));
+    d = dMenger(p, _Center_Offset, _Center_Scale, _IFS_Iteration);
+    opU(m, d * scale, M_FUJI_TV, 0.0, 0.0);
+
+    p = pos - _Sphere_Position;
+    d = length(p) - _Sphere_Radius;
+    opU(m, d * scale, M_FUJI_TV, 1., 0.0);
+
+    return m;
+}
+
+uniform float gFujiTVScale;  // 0.1
+
 vec4 map(vec3 pos) {
     vec4 m = vec4(999., 0., 0., 0.);
     vec3 p = pos;
@@ -379,6 +459,9 @@ vec4 map(vec3 pos) {
         p = pos - gurdian_pos;
         m = mGuardian(p, m);
     }
+
+    p = pos;
+    m = mFujiTV(p, m, gFujiTVScale);
 
     return m;
 }
@@ -490,7 +573,7 @@ uniform float gRiberMin;             // 0.5 0 3
 uniform float gGreenNoiseIntensity;  // 1 0 2
 uniform float gGreenNoiseFreq;       // 500 0 1000
 
-uniform float gRaymarchingEps; // 0.0003
+uniform float gRaymarchingEps;  // 0.0003
 
 vec3 raymarch(inout vec3 ro, inout vec3 rd, vec3 bgcol, inout bool hit, inout vec3 reflection) {
     vec3 col = vec3(0);
@@ -603,6 +686,16 @@ vec3 raymarch(inout vec3 ro, inout vec3 rd, vec3 bgcol, inout bool hit, inout ve
             }
 
             emissive = albedo * 2.;
+        } else if (m.y == M_FUJI_TV) {
+            if (m.z == 1.) {
+                albedo = vec3(1);
+                metalness = 1.;
+                roughness = 0.;
+            } else {
+                albedo = vec3(0.8);
+                metalness = 0.1;
+                roughness = 0.9;
+            }
         }
 
         vec3 lightDir = sundir;
